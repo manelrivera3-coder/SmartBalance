@@ -32,8 +32,10 @@ texts = {
         "gas": "Gas",
         "aigua": "Agua",
         "deutes": "Préstamos / Deudas",
-        "total_gastos": "Total Gastos Fijos",
-        "disponible": "Disponible para Oci/Ahorro",
+        "total_gastos": "Total Gastos Fijos (50%)",
+        "oci_recom": "Presupuesto Ocio (30%)",
+        "ahorro_recom": "Objetivo Ahorro (20%)",
+        "disponible": "Disponible Total",
         "ratio_label": "% de tus ingresos",
         "veredicte": "Tu Veredicto Financiero",
         "error_bloqueo": "⚠️ Por favor, completa tus datos en la pestaña 'Mi Radiografía' para desbloquear el resto.",
@@ -65,8 +67,10 @@ texts = {
         "gas": "Gas",
         "aigua": "Water",
         "deutes": "Loans / Debts",
-        "total_gastos": "Total Fixed Expenses",
-        "disponible": "Available for Leisure/Savings",
+        "total_gastos": "Total Fixed Expenses (50%)",
+        "oci_recom": "Leisure Budget (30%)",
+        "ahorro_recom": "Savings Goal (20%)",
+        "disponible": "Total Available",
         "ratio_label": "% of your income",
         "veredicte": "Your Financial Verdict",
         "error_bloqueo": "⚠️ Please, fill in your data in the 'My Radiography' tab to unlock the rest.",
@@ -98,9 +102,24 @@ with st.sidebar:
     mobil_val = st.number_input(t["mobil"], min_value=0, value=0)
     deute_val = st.number_input(t["deutes"], min_value=0, value=0)
 
-# Càlculs
+# Càlculs base
 total_gastos = lloguer_val + llum_val + gas_val + aigua_val + internet_val + mobil_val + deute_val
 ratio = (total_gastos / ingresos_val * 100) if ingresos_val > 0 else 0
+disponible_total = max(0, ingresos_val - total_gastos)
+
+# Càlculs Regla 50/30/20 (Ideal)
+oci_ideal = ingresos_val * 0.30
+ahorro_ideal = ingresos_val * 0.20
+
+# Adaptació real segons el que queda
+if ratio > 50:
+    # Si les despeses fixes superen el 50%, repartim el que queda proporcionalment 60/40 entre oci i estalvi
+    oci_real = disponible_total * 0.60
+    ahorro_real = disponible_total * 0.40
+else:
+    oci_real = oci_ideal
+    ahorro_real = ahorro_ideal
+
 is_ready = ingresos_val > 0 and total_gastos > 0
 
 # 4. PESTANYES
@@ -114,36 +133,40 @@ with tab1:
     if ingresos_val == 0:
         st.info(t["error_bloqueo"])
     
-    c1, c2, c3 = st.columns(3)
+    # Primera fila de mètriques
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric(t["total_gastos"], f"{total_gastos} €")
     c2.metric(t["ratio_label"], f"{ratio:.1f}%", delta="-50%" if ratio > 50 else "OK", delta_color="inverse" if ratio > 50 else "normal")
-    c3.metric(t["disponible"], f"{ingresos_val - total_gastos} €")
+    c3.metric(t["oci_recom"], f"{int(oci_real)} €")
+    c4.metric(t["ahorro_recom"], f"{int(ahorro_real)} €")
 
     if is_ready:
+        st.divider()
         col_l, col_r = st.columns(2)
         with col_l:
-            labels = [t["lloguer"], t["llum"], t["gas"], t["aigua"], t["internet"], t["mobil"], t["deutes"], t["disponible"]]
-            values = [lloguer_val, llum_val, gas_val, aigua_val, internet_val, mobil_val, deute_val, max(0, ingresos_val-total_gastos)]
+            labels = [t["lloguer"], t["llum"], t["gas"], t["aigua"], t["internet"], t["mobil"], t["deutes"], t["oci_recom"], t["ahorro_recom"]]
+            values = [lloguer_val, llum_val, gas_val, aigua_val, internet_val, mobil_val, deute_val, oci_real, ahorro_real]
             fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4)])
+            fig.update_layout(title_text="SmartBalance 50/30/20")
             st.plotly_chart(fig, use_container_width=True)
         with col_r:
             st.subheader(t["veredicte"])
             if ratio > 50:
-                st.error("🚨" + (" Gastas demasiado en fijos." if idioma == "Español" else " Fixed costs too high."))
+                st.error("🚨" + (" Tus gastos fijos superan el 50%. Debes recortar facturas urgentemente." if idioma == "Español" else " Fixed costs exceed 50%. You must cut bills urgently."))
             else:
-                st.success("✅" + (" ¡Finanzas equilibradas!" if idioma == "Español" else " Balanced finances!"))
+                st.success("✅" + (" ¡Finanzas bajo control! Estás siguiendo la regla de oro." if idioma == "Español" else " Finances under control! You are following the golden rule."))
+            
             score = max(0, 100 - int(ratio))
-            st.write(f"**Score: {score}/100**")
+            st.write(f"**Financial Score: {score}/100**")
             st.progress(score / 100)
+            st.info("💡 " + ("El presupuesto de Ocio y Ahorro se ha calculado en base a lo que te queda disponible tras tus gastos fijos." if idioma == "Español" else "Leisure and Savings budgets are calculated based on what remains after your fixed expenses."))
 
-# --- TAB 2: PLAN DE AHORRO (BLOQUEJADA SI NO HI HA DADES) ---
+# --- TAB 2: PLAN DE AHORRO ---
 with tab2:
     if not is_ready:
         st.warning(t["error_bloqueo"])
     else:
         st.header(t["tab2"])
-        
-        # Lògica de comparació
         def row_ahorro(servici, actual, optim):
             col1, col2, col3 = st.columns([2, 2, 2])
             with col1: st.write(f"**{servici}**")
@@ -159,11 +182,11 @@ with tab2:
         st.divider()
         row_ahorro(t["mobil"], mobil_val, 10.0)
         st.divider()
-        row_ahorro(t["llum"], llum_val, llum_val*0.75) # Estimació 25% estalvi
+        row_ahorro(t["llum"], llum_val, round(llum_val*0.75, 2))
         st.divider()
-        st.write(f"**{t['aigua']}**: " + ("El precio del agua es regulado. Revisa goteos y solicita el Bono Social si tus ingresos son bajos." if idioma == "Español" else "Water prices are regulated. Check for leaks and apply for social discounts if eligible."))
+        row_ahorro(t["gas"], gas_val, round(gas_val*0.80, 2))
 
-# --- TAB 3: INVERSIÓN (BLOQUEJADA) ---
+# --- TAB 3: INVERSIÓN ---
 with tab3:
     if not is_ready:
         st.warning(t["error_bloqueo"])
@@ -171,14 +194,15 @@ with tab3:
         st.header(t["simulador_t"])
         perf = st.select_slider(t["perfil_riesgo"], options=t["perfils"])
         anys = st.slider(t["años"], 1, 30, 10)
-        inv = st.slider(t["inv_mensual"], 0, 2000, 200)
+        # Sugerim invertir exactament el que ha sortit com a ahorro_real
+        inv = st.slider(t["inv_mensual"], 0, int(ingresos_val), int(ahorro_real))
         
         r = 0.03 if perf == t["perfils"][0] else (0.05 if perf == t["perfils"][1] else 0.08)
         final = 0
         for _ in range(anys * 12): final = (final + inv) * (1 + r/12)
         
-        st.line_chart([ (inv*i) for i in range(anys*12) ]) # Gràfic simple de creixement
-        st.success(t["resultado_inv"].format(anys, int(final)))
+        st.success(t["resultado_inv"].format(anys, f"{final:,.0f}"))
+        st.caption("Nota: El interés compuesto es la clave para que tus ahorros venzan a la inflación.")
 
 # --- TAB 4: EDUCACIÓN ---
 with tab4:
