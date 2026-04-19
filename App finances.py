@@ -129,81 +129,78 @@ with tab1:
         else:
             st.error(t["veredicto_ko"])
             exces = total_fijos - (ing_val * 0.5)
-            st.write(f"⚠️ Estàs gastant **{int(exces)}€ de més** en factures fixes cada mes.")
+            st.write(f"⚠️ Estás gastando **{int(exces)}€ de más** en facturas fijas cada mes.")
         
         st.info(f"Para cumplir la regla 50/30/20, tus gastos fijos no deberían superar los **{int(ing_val * 0.5)}€**.")
 
-# --- TAB 2: BUSCADOR FINO (ESTIL RASTREATOR) ---
+# --- TAB 2: PLAN DE AHORRO ---
 with tab2:
     st.header(t["tab2"])
     
-    def draw_offer(cia, p_nou, p_act, unitat="€", is_kwh=False):
+    # Funció actualitzada que rep la URL del referit
+    def draw_offer(cia, p_nou, p_act, url_referit, unitat="€", is_kwh=False):
         est = (p_act - p_nou) * 3000 if is_kwh else (p_act - p_nou) * 12
         st.markdown(f"""<div class='company-box'><b>{cia}</b><br><span class='price-text'>{p_nou}{unitat}</span><br>
                     <span class='save-label'>{t['ahorro_anual']}{max(0, round(est,2))}€</span></div>""", unsafe_allow_html=True)
-        st.link_button(t["btn_save"], "https://google.com", use_container_width=True)
+        st.link_button(t["btn_save"], url_referit, use_container_width=True)
 
-    # SECCIÓ ASSEGURANÇA COTXE (DETALLADA)
-    with st.expander("🚗 Buscador de Seguros de Coche", expanded=True):
+    # 1. ASSEGURANÇA COTXE
+    with st.expander("🚗 Buscador de Seguros (Estilo Rastreator)", expanded=True):
         c1, c2, c3 = st.columns(3)
         with c1:
-            marca = st.selectbox(t["f_marca"], ["Seat", "Volkswagen", "Toyota", "BMW", "Audi", "Otros"])
+            marca = st.selectbox(t["f_marca"], ["Seat", "Toyota", "BMW", "Audi", "Otros"])
             edat = st.number_input(t["f_edad"], 18, 90, 30)
         with c2:
-            comb = st.selectbox(t["f_combustible"], ["Gasolina", "Diésel", "Híbrido/Eléctrico"])
+            comb = st.selectbox(t["f_combustible"], ["Gasolina", "Diésel", "Híbrido"])
             carnet = st.number_input(t["f_carnet"], 0, 70, 10)
         with c3:
-            uso = st.selectbox(t["f_uso"], ["Particular", "Trabajo", "Km ocasionales"])
-            tipo_seg = st.selectbox("Tipo de cobertura", ["Terceros", "Terceros Ampliado", "Todo Riesgo"])
+            tipo_seg = st.selectbox("Cobertura", ["Terceros", "Todo Riesgo"])
 
-        # Simulació de preus segons dades (Rastreator style)
-        preu_base = 18 if tipo_seg == "Terceros" else (28 if tipo_seg == "Terceros Ampliado" else 45)
-        if edat < 25 or carnet < 3: preu_base += 12
-        if marca in ["BMW", "Audi"]: preu_base += 8
-
-        st.subheader("Mejores ofertas para tu coche")
+        preu_base = 18 if tipo_seg == "Terceros" else 45
+        if edat < 25: preu_base += 15
+        
         ca, cb, cc = st.columns(3)
-        with ca: draw_offer("Qualitas", preu_base, seg_val)
-        with cb: draw_offer("Axa", round(preu_base * 1.1, 2), seg_val)
-        with cc: draw_offer("Mapfre", round(preu_base * 1.25, 2), seg_val)
+        with ca: draw_offer("Qualitas", preu_base, seg_val, "https://google.com") # Canviar per el teu link
+        with cb: draw_offer("Axa", round(preu_base*1.1, 2), seg_val, "https://google.com")
+        with cc: draw_offer("Mapfre", round(preu_base*1.3, 2), seg_val, "https://google.com")
 
-    # SECCIÓ INTERNET I MOBIL
+    # 2. INTERNET I LLUM
     col_l, col_r = st.columns(2)
     with col_l:
         with st.expander("🌐 Internet y Fibra"):
             f_f = st.select_slider(t["filtro_fibra"], options=["300Mb", "600Mb", "1Gb"])
-            p_fib = 20 if f_f=="300Mb" else (25 if f_f=="600Mb" else 32)
+            p_fib = 20 if f_f=="300Mb" else (25 if f_f=="600Mb" else 30)
             c1, c2, c3 = st.columns(3)
-            with c1: draw_offer("Digi", p_fib, int_val)
-            with c2: draw_offer("Lowi", p_fib + 4, int_val)
-            with c3: draw_offer("O2", p_fib + 7, int_val)
+            with c1: draw_offer("Digi", p_fib, int_val, "https://google.com")
+            with c2: draw_offer("Lowi", p_fib+4, int_val, "https://google.com")
+            with c3: draw_offer("O2", p_fib+7, int_val, "https://google.com")
     
     with col_r:
+        with st.expander("💡 Luz"):
+            kwh = st.number_input(t["preu_kwh_actual"], 0.0, 0.5, 0.18)
+            c1, c2, c3 = st.columns(3)
+            with c1: draw_offer("Octopus", 0.11, kwh, "https://google.com", "€/kWh", True)
+            with c2: draw_offer("Naturgy", 0.13, kwh, "https://google.com", "€/kWh", True)
+            with c3: draw_offer("Endesa", 0.14, kwh, "https://google.com", "€/kWh", True)
+
+    # 3. MOBIL I GAS
+    col_l2, col_r2 = st.columns(2)
+    with col_l2:
         with st.expander("📲 Móvil"):
             f_m = st.select_slider(t["filtro_mobil"], options=["20GB", "100GB", "Unlimited"])
             p_m = 7 if f_m=="20GB" else (15 if f_m=="100GB" else 25)
             c1, c2, c3 = st.columns(3)
-            with c1: draw_offer("Simyo", p_m, mob_val)
-            with c2: draw_offer("Pepephone", p_m + 3, mob_val)
-            with c3: draw_offer("Vodafone", p_m + 10, mob_val)
-
-    # SECCIÓ LLUM I GAS
-    col_l2, col_r2 = st.columns(2)
-    with col_l2:
-        with st.expander("💡 Luz"):
-            kwh = st.number_input(t["preu_kwh_actual"], 0.0, 0.5, 0.18)
-            c1, c2, c3 = st.columns(3)
-            with c1: draw_offer("Octopus", 0.11, kwh, "€/kWh", True)
-            with c2: draw_offer("Naturgy", 0.13, kwh, "€/kWh", True)
-            with c3: draw_offer("Endesa", 0.14, kwh, "€/kWh", True)
+            with c1: draw_offer("Simyo", p_m, mob_val, "https://google.com")
+            with c2: draw_offer("Pepephone", p_m+3, mob_val, "https://google.com")
+            with c3: draw_offer("Vodafone", p_m+10, mob_val, "https://google.com")
     
     with col_r2:
         with st.expander("🔥 Gas"):
             c1, c2, c3 = st.columns(3)
-            with c1: draw_offer("Energía XXI", 18, gas_val)
-            with c2: draw_offer("TotalEnergies", 20, gas_val)
-            with c3: draw_offer("Endesa Gas", 22, gas_val)
+            with c1: draw_offer("Energía XXI", 18, gas_val, "https://google.com")
+            with c2: draw_offer("TotalEnergies", 20, gas_val, "https://google.com")
+            with c3: draw_offer("Endesa Gas", 22, gas_val, "https://google.com")
 
-# PESTANYES 3 I 4 (BUIDES PER ARA)
-with tab3: st.write("Módulo de Inversión")
-with tab4: st.write("Módulo de Educación")
+# PESTANYES 3 I 4 (POTS OMPLIR-LES DESPRÉS)
+with tab3: st.info("Próximamente: Simulador de Inversión")
+with tab4: st.info("Próximamente: Artículos de Educación Financiera")
