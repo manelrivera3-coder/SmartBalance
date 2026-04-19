@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 # 1. CONFIGURACIÓ DE LA PÀGINA
 st.set_page_config(page_title="SmartBalance", layout="wide", page_icon="💰")
 
-# Estils CSS Personalitzats
+# Estils CSS Personalitzats per a tota l'app
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
@@ -23,8 +23,6 @@ st.markdown("""
     .bad-debt { background-color: #f8d7da; color: #721c24; border-left: 5px solid #dc3545; }
     .good-debt { background-color: #d4edda; color: #155724; border-left: 5px solid #28a745; }
     .neutral-debt { background-color: #fff3cd; color: #856404; border-left: 5px solid #ffc107; }
-    .investment-card { padding: 15px; border-radius: 10px; border: 2px solid #e0e0e0; margin-bottom: 10px; }
-    .recommended { border: 2px solid #28a745 !important; background-color: #f0fff4; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -35,8 +33,7 @@ texts = {
         "tab1": "📊 Mi Radiografía",
         "tab2": "✂️ Plan de Ahorro",
         "tab3": "📉 Centro de Deuda",
-        "tab4": "📈 Inversión",
-        "tab5": "🎓 Educación",
+        "tab4": "🎓 Educación",
         "ingresos_label": "Ingresos mensuales netos (€)",
         "gastos_f": "Gastos Fijos Mensuales",
         "seguro_coche": "Seguro Coche (Mensual)",
@@ -59,15 +56,13 @@ texts = {
     }
 }
 
-# 3. SIDEBAR
+# 3. SIDEBAR - ENTRADA DE DATOS PRINCIPALES
 with st.sidebar:
     idioma = st.selectbox("Idioma", ["Español"])
     t = texts[idioma]
     st.header(t["gastos_f"])
     ing_val = st.number_input(t["ingresos_label"], min_value=1, value=2000)
     lloguer_val = st.number_input("Alquiler / Hipoteca (Cuota)", value=800)
-    alim_val = st.number_input("Alimentación (Súper)", value=350)
-    gaso_val = st.number_input("Gasolina / Transporte", value=120)
     llum_val = st.number_input("Luz (Electricidad)", value=60)
     gas_val = st.number_input("Gas", value=30)
     aigua_val = st.number_input("Agua", value=20)
@@ -75,20 +70,24 @@ with st.sidebar:
     mob_val = st.number_input("Móvil", value=15)
     seg_val = st.number_input(t["seguro_coche"], value=40)
 
+# Inicializar lista de deudas en session_state para que no se borren al recargar
 if 'deutes_lista' not in st.session_state:
     st.session_state.deutes_lista = []
 
+# Calcular total cuotas de deuda de la Pestaña 3 para incluirlas en la Pestaña 1
 total_cuotas_deuda = sum(d['cuota'] for d in st.session_state.deutes_lista)
 
-# Cálculos Globales (Incluyendo Alimentación y Gasolina)
-total_fijos = lloguer_val + alim_val + gaso_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val + total_cuotas_deuda
+# Cálculos Globales
+total_fijos = lloguer_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val + total_cuotas_deuda
 ratio_fijos = (total_fijos / ing_val) * 100
 oci_ideal = ing_val * 0.3
 ahorro_ideal = ing_val * 0.2
 is_ready = ing_val > 0 and total_fijos > 0
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([t["tab1"], t["tab2"], t["tab3"], t["tab4"], t["tab5"]])
+# 4. PESTAÑAS
+tab1, tab2, tab3, tab4 = st.tabs([t["tab1"], t["tab2"], t["tab3"], t["tab4"]])
 
+# --- TAB 1: RADIOGRAFÍA ---
 with tab1:
     st.title(t["titol"])
     c1, c2, c3, c4 = st.columns(4)
@@ -96,6 +95,7 @@ with tab1:
     c2.metric(t["ratio_label"], f"{ratio_fijos:.1f}%", delta="Máx 50%", delta_color="inverse")
     c3.metric("Ocio Sugerido (30%)", f"{int(oci_ideal)} €")
     c4.metric("Ahorro Sugerido (20%)", f"{int(ahorro_ideal)} €")
+
     st.divider()
     col_l, col_r = st.columns([1, 1])
     with col_l:
@@ -106,42 +106,87 @@ with tab1:
         st.plotly_chart(fig, use_container_width=True)
     with col_r:
         st.subheader(t["veredicte_t"])
-        if ratio_fijos <= 50: st.success(t["veredicto_ok"])
+        if ratio_fijos <= 50:
+            st.success(t["veredicto_ok"])
         else:
             st.error(t["veredicto_ko"])
             exces = total_fijos - (ing_val * 0.5)
-            st.write(f"⚠️ Estás gastando **{int(exces)}€ de más** cada mes.")
-        st.info(f"Tu disponible real para otros gastos es: **{int(ing_val - total_fijos)}€**")
+            st.write(f"⚠️ Estás gastando **{int(exces)}€ de más** cada mes. Mira la pestaña 'Plan de Ahorro'.")
+        st.info(f"Para cumplir la regla 50/30/20, tus gastos fijos no deberían superar los **{int(ing_val * 0.5)}€**.")
 
+# --- TAB 2: PLAN DE AHORRO ---
 with tab2:
-    if not is_ready: st.warning("Introduce tus ingresos en el menú lateral.")
+    if not is_ready:
+        st.warning("Introduce tus ingresos en el menú lateral.")
     else:
-        est_int = max(0, (int_val - 20) * 12); est_llu = max(0, (0.18 - 0.11) * 3000)
-        est_mob = max(0, (mob_val - 7) * 12); est_seg = max(0, (seg_val - 18) * 12)
+        # Cálculo de ahorro potencial para el Banner
+        est_int = max(0, (int_val - 20) * 12)
+        est_llu = max(0, (0.18 - 0.11) * 3000)
+        est_mob = max(0, (mob_val - 7) * 12)
+        est_seg = max(0, (seg_val - 18) * 12)
         est_total = est_int + est_llu + est_mob + est_seg
+
         st.markdown(f"<div class='total-save-banner'>{t['total_ahorro_msg']} {round(est_total, 2)} € 💰</div>", unsafe_allow_html=True)
+
         def draw_offer(cia, p_nou, p_act, url, unitat="€", is_kwh=False):
             est = (p_act - p_nou) * 3000 if is_kwh else (p_act - p_nou) * 12
             st.markdown(f"<div class='company-box'><b>{cia}</b><br><span class='price-text'>{p_nou}{unitat}</span><br><span class='save-label'>{t['ahorro_anual']}{max(0, round(est,2))}€</span></div>", unsafe_allow_html=True)
             st.link_button(t["btn_save"], url, use_container_width=True)
-        with st.expander("🚗 Buscador de Seguros de Coche", expanded=True):
+
+        # SECCIÓN SEGURO COCHE
+        with st.expander("🚗 Buscador de Seguros de Coche (Estilo Rastreator)", expanded=True):
+            c1, c2, c3 = st.columns(3)
+            with c1: marca = st.selectbox(t["f_marca"], ["Seat", "Toyota", "Audi", "BMW", "Otros"]); edat = st.number_input(t["f_edad"], 18, 90, 30)
+            with c2: comb = st.selectbox(t["f_combustible"], ["Gasolina", "Diésel", "Híbrido"]); carnet = st.number_input(t["f_carnet"], 0, 70, 10)
+            with c3: tipo_seg = st.selectbox("Cobertura", ["Terceros", "Todo Riesgo"])
+            
+            p_base = 18 if tipo_seg == "Terceros" else 45
+            if edat < 25: p_base += 15
+            
             ca, cb, cc = st.columns(3)
-            draw_offer("Qualitas", 18, seg_val, "https://google.com")
-            draw_offer("Axa", 22, seg_val, "https://google.com")
-            draw_offer("Mapfre", 28, seg_val, "https://google.com")
+            with ca: draw_offer("Qualitas", p_base, seg_val, "https://google.com")
+            with cb: draw_offer("Axa", round(p_base*1.1, 2), seg_val, "https://google.com")
+            with cc: draw_offer("Mapfre", round(p_base*1.3, 2), seg_val, "https://google.com")
+
+        # SECCIÓN INTERNET Y LUZ
         col_l, col_r = st.columns(2)
         with col_l:
             with st.expander("🌐 Internet y Fibra"):
-                draw_offer("Digi", 20, int_val, "https://google.com")
-                draw_offer("Lowi", 24, int_val, "https://google.com")
+                f_f = st.select_slider(t["filtro_fibra"], options=["300Mb", "600Mb", "1Gb"])
+                p_f = 20 if f_f=="300Mb" else (25 if f_f=="600Mb" else 30)
+                c1, c2, c3 = st.columns(3)
+                with c1: draw_offer("Digi", p_f, int_val, "https://google.com")
+                with c2: draw_offer("Lowi", p_f+4, int_val, "https://google.com")
+                with c3: draw_offer("O2", p_f+7, int_val, "https://google.com")
         with col_r:
             with st.expander("💡 Luz"):
-                draw_offer("Octopus", 0.11, 0.18, "https://google.com", "€/kWh", True)
-                draw_offer("Naturgy", 0.13, 0.18, "https://google.com", "€/kWh", True)
-                # --- TAB 3: CENTRO DE DEUDA ---
+                kwh_in = st.number_input(t["preu_kwh_actual"], 0.0, 0.5, 0.18)
+                c1, c2, c3 = st.columns(3)
+                with c1: draw_offer("Octopus", 0.11, kwh_in, "https://google.com", "€/kWh", True)
+                with c2: draw_offer("Naturgy", 0.13, kwh_in, "https://google.com", "€/kWh", True)
+                with c3: draw_offer("Endesa", 0.14, kwh_in, "https://google.com", "€/kWh", True)
+
+        # SECCIÓN MÓVIL Y GAS
+        col_l2, col_r2 = st.columns(2)
+        with col_l2:
+            with st.expander("📲 Móvil"):
+                f_m = st.select_slider(t["filtro_mobil"], options=["20GB", "100GB", "Unlimited"])
+                p_m = 7 if f_m=="20GB" else (15 if f_m=="100GB" else 25)
+                c1, c2, c3 = st.columns(3)
+                with c1: draw_offer("Simyo", p_m, mob_val, "https://google.com")
+                with c2: draw_offer("Pepephone", p_m+3, mob_val, "https://google.com")
+                with c3: draw_offer("Vodafone", p_m+10, mob_val, "https://google.com")
+        with col_r2:
+            with st.expander("🔥 Gas"):
+                c1, c2, c3 = st.columns(3)
+                with c1: draw_offer("Energía XXI", 18, gas_val, "https://google.com")
+                with c2: draw_offer("TotalEnergies", 20, gas_val, "https://google.com")
+                with c3: draw_offer("Endesa Gas", 22, gas_val, "https://google.com")
+
+# --- TAB 3: CENTRO DE DEUDA ---
 with tab3:
     st.header("🏛️ " + t["analisis_prof"])
-    st.write("Analizaremos tus préstamos basándonos en los tipos de interés actuales del mercado.")
+    st.write("Analizaremos tus préstamos basándonos en los tipos de interés actuales del mercado (BCE/Banco de España).")
 
     with st.expander("➕ Añadir / Editar Deudas (Máximo 5)", expanded=True):
         cols = st.columns([2, 2, 1, 1])
@@ -154,56 +199,63 @@ with tab3:
             if len(st.session_state.deutes_lista) < 5:
                 st.session_state.deutes_lista.append({"nom": d_nom, "tipus": d_tipus, "cuota": d_cuota, "interes": d_interes})
                 st.rerun()
+            else:
+                st.error("Límite de 5 préstamos alcanzado.")
 
     if st.session_state.deutes_lista:
+        st.subheader("Tu Análisis Personalizado")
         for i, d in enumerate(st.session_state.deutes_lista):
-            status_class = "neutral-debt"; consejo = ""; btn_txt = ""; link = "https://google.com"
-            if d['tipus'] == "Hipoteca":
-                if d['interes'] > 3.8: status_class = "bad-debt"; consejo = "❌ Muy caro. El mercado está al 2.8%."; btn_txt = "Mejorar Hipoteca"
-                else: status_class = "good-debt"; consejo = "✅ Condiciones competitivas."
-            elif d['tipus'] == "Revolving / Tarjeta":
-                if d['interes'] > 18.0: status_class = "bad-debt"; consejo = "🚨 PELIGRO: Posible usura."; btn_txt = "Unificar Deuda"
-            elif d['interes'] > 9.0: status_class = "bad-debt"; consejo = "❌ Interés alto."; btn_txt = "Refinanciar"
-            else: status_class = "good-debt"; consejo = "✅ Interés correcto."
+            # Lógica de asesor profesional
+            status_class = "neutral-debt"
+            consejo = ""
+            btn_txt = ""
+            link = "https://google.com" # Espacio para tus referidos
 
+            if d['tipus'] == "Hipoteca":
+                if d['interes'] > 3.8:
+                    status_class = "bad-debt"; consejo = "❌ Muy caro. El mercado está al 2.8%."; btn_txt = "Mejorar Hipoteca"
+                else:
+                    status_class = "good-debt"; consejo = "✅ Condiciones competitivas."
+            
+            elif d['tipus'] == "Revolving / Tarjeta":
+                if d['interes'] > 18.0:
+                    status_class = "bad-debt"; consejo = "🚨 PELIGRO: Posible usura. ¡Reclama o unifica!"; btn_txt = "Unificar Deuda"
+                else:
+                    status_class = "neutral-debt"; consejo = "⚠️ Interés alto. Evita usar tarjetas."
+
+            elif d['tipus'] == "Préstamo Personal" or d['tipus'] == "Coche":
+                if d['interes'] > 9.0:
+                    status_class = "bad-debt"; consejo = "❌ Interés alto. Podrías bajarlo al 7%."; btn_txt = "Refinanciar"
+                else:
+                    status_class = "good-debt"; consejo = "✅ Interés dentro de mercado."
+
+            # Renderizado de fila de deuda
             c_d1, c_d2, c_d3 = st.columns([2, 3, 2])
             c_d1.write(f"**{d['nom']}** ({d['cuota']}€/mes)")
             c_d2.markdown(f"<div class='debt-alert {status_class}'>{d['interes']}%: {consejo}</div>", unsafe_allow_html=True)
-            if btn_txt: c_d3.link_button(f"🔗 {btn_txt}", link)
-            if st.button(f"Eliminar {i}"): st.session_state.deutes_lista.pop(i); st.rerun()
+            if btn_txt:
+                c_d3.link_button(f"🔗 {btn_txt}", link)
+            
+            if st.button(f"Eliminar {i}", key=f"del_{i}"):
+                st.session_state.deutes_lista.pop(i)
+                st.rerun()
 
         st.divider()
         ratio_endeudamiento = (total_cuotas_deuda / ing_val) * 100
+        st.subheader("Ratio de Endeudamiento Total")
         col_res1, col_res2 = st.columns(2)
         col_res1.metric("Cuotas de Deuda", f"{total_cuotas_deuda} €")
         col_res2.metric("Ratio DTI", f"{ratio_endeudamiento:.1f}%", delta="-35% Máx")
+
         if ratio_endeudamiento > 35:
-            st.error("🛑 Alerta: Deuda elevada. Recomendamos unificación.")
+            st.error("🛑 **Alerta:** Tu deuda supera el 35% de tus ingresos. Recomendamos una **Reunificación de Deuda** para bajar la cuota total.")
             st.link_button("🆘 Solicitar Reunificación", "https://google.com")
 
-# --- TAB 4: INVERSIÓN ---
+# --- TAB 4: EDUCACIÓN ---
 with tab4:
-    st.header("📈 Test de Perfil y Plan de Inversión")
-    with st.expander("📋 Test de Riesgo (10 Preguntas)", expanded=True):
-        sc = 0
-        q1 = st.selectbox("1. Edad", ["18-35", "36-50", "51+"])
-        q2 = st.radio("2. ¿Qué harías si tu inversión cae un 20%?", ["Vender", "Mantener", "Comprar más"])
-        # (Logica de puntuació simplificada per espai)
-        if q1 == "18-35": sc += 2
-        if q2 == "Comprar más": sc += 3
-        perfil = "Conservador" if sc < 2 else ("Moderado" if sc < 4 else "Arriesgado")
-        st.subheader(f"Tu perfil: **{perfil}**")
-
-    def draw_inv(nom, risc, rent, desc, rec=False):
-        css = "investment-card recommended" if rec else "investment-card"
-        st.markdown(f"<div class='{css}'><h4>{nom} {'⭐' if rec else ''}</h4><b>Riesgo:</b> {risc} | <b>Rent:</b> {rent}<br>{desc}</div>", unsafe_allow_html=True)
-        st.link_button("Saber más", "https://google.com")
-
-    c1, c2, c3 = st.columns(3)
-    with c1: draw_inv("Depósitos", "Bajo", "3%", "Seguridad total.", rec=(perfil=="Conservador"))
-    with c2: draw_inv("Fondos Indexados", "Medio", "7-9%", "Crecimiento global.", rec=(perfil=="Moderado"))
-    with c3: draw_inv("Cripto/Acciones", "Alto", "Variable", "Alta volatilidad.", rec=(perfil=="Arriesgado"))
-
-with tab5:
     st.header("Conceptos Clave")
-    st.info("La clave no es no tener deuda, sino que la deuda sea BARATA.")
+    st.write("1. **¿Qué es un buen interés?**")
+    st.write("- Hipotecas: < 3.5% TIN")
+    st.write("- Préstamos personales: < 8% TIN")
+    st.write("- Tarjetas Revolving: > 20% suele ser reclamable.")
+    st.info("La clave no es no tener deuda, sino que la deuda sea BARATA y no supere el 35% de tus ingresos.")
