@@ -80,32 +80,26 @@ with st.sidebar:
 total_fijos = lloguer_val + credits_val + alim_val + gaso_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val
 ratio_fijos = (total_fijos / ing_val) * 100
 
-# --- TAB 1: RADIOGRAFÍA (ACTUALITZADA AMB CRÈDITS) ---
+# --- TAB 1: RADIOGRAFÍA ---
 with tab1:
     st.title(t["titol"])
     
-    # Calculem el total incloent la suma de les cuotes de deutes
-    # total_fijos ja inclou total_cuotas_deuda segons el càlcul global que hem fet abans
-    
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Gastos Fijos", f"{total_fijos} €")
-    c2.metric("Cuotas Préstamos", f"{total_cuotas_deuda} €", help="Suma de las deudas añadidas en la pestaña 3")
-    c3.metric(t["ratio_label"], f"{ratio_fijos:.1f}%", delta="Máx 50%", delta_color="inverse")
-    c4.metric("Sobrante Real", f"{int(ing_val - total_fijos)} €")
+    c1.metric("Gastos Fijos Total", f"{total_fijos} €")
+    c2.metric("Ratio de Gastos", f"{ratio_fijos:.1f}%", delta="Máx 50%", delta_color="inverse")
+    c3.metric("Ocio Ideal (30%)", f"{int(ing_val * 0.3)} €")
+    c4.metric("Ahorro Ideal (20%)", f"{int(ing_val * 0.2)} €")
 
     st.divider()
     
     col_l, col_r = st.columns([1, 1])
     with col_l:
-        # Gràfic de pastís actualitzat amb 4 categories per a més detall
-        labels = ["Vivienda/Facturas", "Alimentación/Transp.", "Préstamos/Créditos", "Disponible (Ocio/Ahorro)"]
+        # Gràfic que reflexa només el Sidebar
+        labels = ["Vivienda", "Créditos", "Alimentación", "Otros Fijos", "Sobrante"]
+        otros_fijos = llum_val + gas_val + aigua_val + int_val + mob_val + seg_val + gaso_val
+        sobrante = max(0, ing_val - total_fijos)
         
-        # Desglossem les despeses per al gràfic
-        viv_fact = lloguer_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val
-        alim_trans = alim_val + gaso_val
-        disponible = max(0, ing_val - total_fijos)
-        
-        values = [viv_fact, alim_trans, total_cuotas_deuda, disponible]
+        values = [lloguer_val, credits_val, alim_val, otros_fijos, sobrante]
         
         fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4)])
         fig.update_layout(height=400, margin=dict(t=0, b=0, l=0, r=0))
@@ -118,12 +112,9 @@ with tab1:
         else:
             st.error(t["veredicto_ko"])
             exces = total_fijos - (ing_val * 0.5)
-            st.write(f"⚠️ Estás gastando **{int(exces)}€ de más** cada mes sobre el límite del 50%.")
+            st.warning(f"⚠️ Estás gastando **{int(exces)}€** por encima del 50% recomendado.")
         
-        st.info(f"Para cumplir la regla 50/30/20, tus gastos fijos (incluyendo préstamos) no deberían superar los **{int(ing_val * 0.5)}€**.")
-        
-        if total_cuotas_deuda > (ing_val * 0.35):
-            st.warning("🚨 **Aviso:** Tus préstamos superan el 35% de tus ingresos, lo cual es un riesgo financiero alto.")
+        st.info(f"Dinero disponible para ocio y ahorro: **{int(ing_val - total_fijos)}€**")
 
 # --- TAB 2: PLAN DE AHORRO ---
 with tab2:
