@@ -9,6 +9,7 @@ st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
     .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .company-box { background-color: #ffffff; padding: 10px; border-radius: 5px; border: 1px solid #ddd; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -39,7 +40,7 @@ texts = {
         "ratio_label": "% de tus ingresos",
         "veredicte": "Tu Veredicto Financiero",
         "error_bloqueo": "⚠️ Por favor, completa tus datos en la pestaña 'Mi Radiografía' para desbloquear el resto.",
-        "btn_save": "¡Mejorar Tarifa!",
+        "btn_save": "Contratar Oferta",
         "ahorro_anual": "Ahorro anual estimado",
         "perfecto": "¡Precio perfecto!",
         "perfil_riesgo": "Tu perfil de riesgo",
@@ -47,7 +48,8 @@ texts = {
         "simulador_t": "Simulador de Crecimiento",
         "años": "Años",
         "inv_mensual": "Inversión mensual (€)",
-        "resultado_inv": "En {0} años podrías tener: {1} €"
+        "resultado_inv": "En {0} años podrías tener: {1} €",
+        "top_3": "Top 3 mejores ofertas actuales:"
     },
     "English": {
         "setup": "Setup",
@@ -74,7 +76,7 @@ texts = {
         "ratio_label": "% of your income",
         "veredicte": "Your Financial Verdict",
         "error_bloqueo": "⚠️ Please, fill in your data in the 'My Radiography' tab to unlock the rest.",
-        "btn_save": "Improve Rate!",
+        "btn_save": "Get Offer",
         "ahorro_anual": "Estimated annual savings",
         "perfecto": "Perfect price!",
         "perfil_riesgo": "Your risk profile",
@@ -82,7 +84,8 @@ texts = {
         "simulador_t": "Growth Simulator",
         "años": "Years",
         "inv_mensual": "Monthly Investment (€)",
-        "resultado_inv": "In {0} years you could have: {1} €"
+        "resultado_inv": "In {0} years you could have: {1} €",
+        "top_3": "Top 3 best current offers:"
     }
 }
 
@@ -106,20 +109,8 @@ with st.sidebar:
 total_gastos = lloguer_val + llum_val + gas_val + aigua_val + internet_val + mobil_val + deute_val
 ratio = (total_gastos / ingresos_val * 100) if ingresos_val > 0 else 0
 disponible_total = max(0, ingresos_val - total_gastos)
-
-# Càlculs Regla 50/30/20 (Ideal)
-oci_ideal = ingresos_val * 0.30
-ahorro_ideal = ingresos_val * 0.20
-
-# Adaptació real segons el que queda
-if ratio > 50:
-    # Si les despeses fixes superen el 50%, repartim el que queda proporcionalment 60/40 entre oci i estalvi
-    oci_real = disponible_total * 0.60
-    ahorro_real = disponible_total * 0.40
-else:
-    oci_real = oci_ideal
-    ahorro_real = ahorro_ideal
-
+oci_real = disponible_total * 0.6 if ratio > 50 else ingresos_val * 0.3
+ahorro_real = disponible_total * 0.4 if ratio > 50 else ingresos_val * 0.2
 is_ready = ingresos_val > 0 and total_gastos > 0
 
 # 4. PESTANYES
@@ -129,11 +120,8 @@ tab1, tab2, tab3, tab4 = st.tabs([t["tab1"], t["tab2"], t["tab3"], t["tab4"]])
 with tab1:
     st.title(t["titol"])
     st.write(t["subtitol"])
+    if ingresos_val == 0: st.info(t["error_bloqueo"])
     
-    if ingresos_val == 0:
-        st.info(t["error_bloqueo"])
-    
-    # Primera fila de mètriques
     c1, c2, c3, c4 = st.columns(4)
     c1.metric(t["total_gastos"], f"{total_gastos} €")
     c2.metric(t["ratio_label"], f"{ratio:.1f}%", delta="-50%" if ratio > 50 else "OK", delta_color="inverse" if ratio > 50 else "normal")
@@ -147,64 +135,77 @@ with tab1:
             labels = [t["lloguer"], t["llum"], t["gas"], t["aigua"], t["internet"], t["mobil"], t["deutes"], t["oci_recom"], t["ahorro_recom"]]
             values = [lloguer_val, llum_val, gas_val, aigua_val, internet_val, mobil_val, deute_val, oci_real, ahorro_real]
             fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4)])
-            fig.update_layout(title_text="SmartBalance 50/30/20")
             st.plotly_chart(fig, use_container_width=True)
         with col_r:
             st.subheader(t["veredicte"])
-            if ratio > 50:
-                st.error("🚨" + (" Tus gastos fijos superan el 50%. Debes recortar facturas urgentemente." if idioma == "Español" else " Fixed costs exceed 50%. You must cut bills urgently."))
-            else:
-                st.success("✅" + (" ¡Finanzas bajo control! Estás siguiendo la regla de oro." if idioma == "Español" else " Finances under control! You are following the golden rule."))
-            
+            if ratio > 50: st.error("🚨" + (" Gastos altos." if idioma == "Español" else " High expenses."))
+            else: st.success("✅" + (" Controlado." if idioma == "Español" else " Controlled."))
             score = max(0, 100 - int(ratio))
-            st.write(f"**Financial Score: {score}/100**")
+            st.write(f"**Score: {score}/100**")
             st.progress(score / 100)
-            st.info("💡 " + ("El presupuesto de Ocio y Ahorro se ha calculado en base a lo que te queda disponible tras tus gastos fijos." if idioma == "Español" else "Leisure and Savings budgets are calculated based on what remains after your fixed expenses."))
 
-# --- TAB 2: PLAN DE AHORRO ---
+# --- TAB 2: PLAN DE AHORRO (MONETITZACIÓ) ---
 with tab2:
     if not is_ready:
         st.warning(t["error_bloqueo"])
     else:
         st.header(t["tab2"])
-        def row_ahorro(servici, actual, optim):
-            col1, col2, col3 = st.columns([2, 2, 2])
-            with col1: st.write(f"**{servici}**")
-            with col2: st.write(f"{actual}€  vs  **{optim}€**")
-            with col3:
-                if actual > optim:
-                    st.link_button(t["btn_save"], "https://google.com")
-                    st.caption(f"{t['ahorro_anual']}: {(actual-optim)*12}€")
-                else:
-                    st.write(f"✅ {t['perfecto']}")
+        
+        # Base de dades d'ofertes (Simulada - Aquí posaràs els teus afiliats)
+        db_ofertes = {
+            "internet": [
+                {"cia": "Digi", "preu": 25.0, "link": "https://digimobil.es"},
+                {"cia": "Lowi", "preu": 29.9, "link": "https://lowi.es"},
+                {"cia": "O2", "preu": 35.0, "link": "https://o2online.es"}
+            ],
+            "mobil": [
+                {"cia": "Simyo", "preu": 7.0, "link": "https://simyo.es"},
+                {"cia": "Pepephone", "preu": 10.0, "link": "https://pepephone.com"},
+                {"cia": "Finetwork", "preu": 12.0, "link": "https://finetwork.com"}
+            ],
+            "llum": [
+                {"cia": "Octopus", "preu": "Market -15%", "link": "https://octopusenergy.es"},
+                {"cia": "Naturgy", "preu": "Fixed Rate", "link": "https://naturgy.es"},
+                {"cia": "Endesa", "preu": "Promo 24h", "link": "https://endesa.com"}
+            ]
+        }
 
-        row_ahorro(t["internet"], internet_val, 25.0)
-        st.divider()
-        row_ahorro(t["mobil"], mobil_val, 10.0)
-        st.divider()
-        row_ahorro(t["llum"], llum_val, round(llum_val*0.75, 2))
-        st.divider()
-        row_ahorro(t["gas"], gas_val, round(gas_val*0.80, 2))
+        def mostrar_seccio_estalvi(titol, valor_actual, clau_db):
+            st.subheader(f"✂️ {titol}")
+            best_price = db_ofertes[clau_db][0]["preu"] if isinstance(db_ofertes[clau_db][0]["preu"], float) else 0
+            
+            # Alerta d'estalvi
+            if isinstance(best_price, float) and valor_actual > best_price:
+                st.warning(f"{t['ahorro_anual']}: {(valor_actual - best_price)*12:.2f} €")
+            else:
+                st.success(t["perfecto"])
+
+            st.write(t["top_3"])
+            cols = st.columns(3)
+            for i, oferta in enumerate(db_ofertes[clau_db]):
+                with cols[i]:
+                    st.markdown(f"""<div class='company-box'><b>{oferta['cia']}</b><br>{oferta['preu']}€</div>""", unsafe_allow_html=True)
+                    st.link_button(t["btn_save"], oferta["link"], use_container_width=True)
+            st.divider()
+
+        mostrar_seccio_estalvi(t["internet"], internet_val, "internet")
+        mostrar_seccio_estalvi(t["mobil"], mobil_val, "mobil")
+        mostrar_seccio_estalvi(t["llum"], llum_val, "llum")
 
 # --- TAB 3: INVERSIÓN ---
 with tab3:
-    if not is_ready:
-        st.warning(t["error_bloqueo"])
+    if not is_ready: st.warning(t["error_bloqueo"])
     else:
         st.header(t["simulador_t"])
         perf = st.select_slider(t["perfil_riesgo"], options=t["perfils"])
         anys = st.slider(t["años"], 1, 30, 10)
-        # Sugerim invertir exactament el que ha sortit com a ahorro_real
         inv = st.slider(t["inv_mensual"], 0, int(ingresos_val), int(ahorro_real))
-        
         r = 0.03 if perf == t["perfils"][0] else (0.05 if perf == t["perfils"][1] else 0.08)
         final = 0
         for _ in range(anys * 12): final = (final + inv) * (1 + r/12)
-        
         st.success(t["resultado_inv"].format(anys, f"{final:,.0f}"))
-        st.caption("Nota: El interés compuesto es la clave para que tus ahorros venzan a la inflación.")
 
 # --- TAB 4: EDUCACIÓN ---
 with tab4:
     st.header(t["tab4"])
-    st.write("Contenido educativo en desarrollo..." if idioma == "Español" else "Educational content under development...")
+    st.write("Contenido educativo en desarrollo...")
