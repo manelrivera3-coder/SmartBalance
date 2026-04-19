@@ -63,6 +63,10 @@ with st.sidebar:
     st.header(t["gastos_f"])
     ing_val = st.number_input(t["ingresos_label"], min_value=1, value=2000)
     lloguer_val = st.number_input("Alquiler / Hipoteca (Cuota)", value=800)
+    # --- NOVES DESPESES AFEGIDES ---
+    alim_val = st.number_input("Alimentación (Súper)", value=350)
+    gaso_val = st.number_input("Gasolina / Transporte", value=120)
+    # ------------------------------
     llum_val = st.number_input("Luz (Electricidad)", value=60)
     gas_val = st.number_input("Gas", value=30)
     aigua_val = st.number_input("Agua", value=20)
@@ -70,22 +74,22 @@ with st.sidebar:
     mob_val = st.number_input("Móvil", value=15)
     seg_val = st.number_input(t["seguro_coche"], value=40)
 
-# Inicializar lista de deudas en session_state para que no se borren al recargar
+# Inicializar lista de deudas en session_state
 if 'deutes_lista' not in st.session_state:
     st.session_state.deutes_lista = []
 
-# Calcular total cuotas de deuda de la Pestaña 3 para incluirlas en la Pestaña 1
+# Calcular total cuotas de deuda
 total_cuotas_deuda = sum(d['cuota'] for d in st.session_state.deutes_lista)
 
-# Cálculos Globales
-total_fijos = lloguer_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val + total_cuotas_deuda
+# Cálculos Globales (ACTUALITZATS AMB ALIM I GASO)
+total_fijos = lloguer_val + alim_val + gaso_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val + total_cuotas_deuda
 ratio_fijos = (total_fijos / ing_val) * 100
 oci_ideal = ing_val * 0.3
 ahorro_ideal = ing_val * 0.2
 is_ready = ing_val > 0 and total_fijos > 0
 
-# 4. PESTAÑAS
-tab1, tab2, tab3, tab4 = st.tabs([t["tab1"], t["tab2"], t["tab3"], t["tab4"]])
+# 4. PESTAÑAS (AFEGIM LA PESTANYA 5 D'INVERSIÓ)
+tab1, tab2, tab3, tab4, tab5 = st.tabs([t["tab1"], t["tab2"], t["tab3"], "📈 Inversión", t["tab4"]])
 
 # --- TAB 1: RADIOGRAFÍA ---
 with tab1:
