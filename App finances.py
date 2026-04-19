@@ -255,11 +255,52 @@ with tab3:
             st.error("🛑 **Alerta:** Tu deuda supera el 35% de tus ingresos. Recomendamos una **Reunificación de Deuda** para bajar la cuota total.")
             st.link_button("🆘 Solicitar Reunificación", "https://google.com")
 
-# --- TAB 4: EDUCACIÓN ---
+# --- TAB 4: INVERSIÓN (NOVA) ---
 with tab4:
-    st.header("Conceptos Clave")
-    st.write("1. **¿Qué es un buen interés?**")
-    st.write("- Hipotecas: < 3.5% TIN")
-    st.write("- Préstamos personales: < 8% TIN")
-    st.write("- Tarjetas Revolving: > 20% suele ser reclamable.")
-    st.info("La clave no es no tener deuda, sino que la deuda sea BARATA y no supere el 35% de tus ingresos.")
+    st.header("📈 Tu Estrategia de Inversión")
+    st.write("Una vez optimizado el ahorro y analizada la deuda, es hora de poner a trabajar tu dinero.")
+    
+    with st.expander("📋 Test de Perfil de Riesgo (10 Preguntas)", expanded=True):
+        sc = 0
+        q1 = st.selectbox("1. ¿Cuál es tu edad?", ["18-35", "36-50", "51-65", "65+"])
+        q2 = st.radio("2. ¿Qué harías si tu inversión cae un 20% en un mes?", ["Vender todo", "Mantener", "Comprar más"])
+        q3 = st.selectbox("3. Plazo de la inversión", ["< 2 años", "2-5 años", "5-10 años", "> 10 años"])
+        q4 = st.radio("4. ¿Tienes fondo de emergencia?", ["No", "Sí, 3 meses", "Sí, +6 meses"])
+        q5 = st.radio("5. ¿Conoces el interés compuesto?", ["No", "Un poco", "Perfectamente"])
+        q6 = st.radio("6. Estabilidad de tus ingresos", ["Baja", "Media", "Alta"])
+        q7 = st.selectbox("7. Objetivo principal", ["No perder dinero", "Batir inflación", "Crecimiento máximo"])
+        q8 = st.radio("8. ¿Te asusta la volatilidad?", ["Mucho", "Normal", "Nada"])
+        q9 = st.radio("9. ¿Has invertido antes?", ["Nunca", "Algo", "Soy experto"])
+        q10 = st.radio("10. ¿Invertirías en algo que no entiendes?", ["No", "Depende", "Si da rentabilidad"])
+
+        # Lògica de perfil
+        if q2 == "Comprar más": sc += 3
+        if q7 == "Crecimiento máximo": sc += 3
+        if q3 == "> 10 años": sc += 2
+        
+        perfil = "Conservador" if sc < 3 else ("Moderado" if sc < 6 else "Arriesgado")
+        st.subheader(f"Perfil recomendado: **{perfil}**")
+
+    st.divider()
+    
+    def draw_inv(nom, risc, rent, desc, rec=False):
+        css = "border: 2px solid #28a745; background-color: #f0fff4;" if rec else "border: 1px solid #e0e0e0;"
+        st.markdown(f"""<div style='padding:15px; border-radius:10px; {css} margin-bottom:10px;'>
+            <h4>{nom} {'⭐' if rec else ''}</h4>
+            <b>Riesgo:</b> {risc} | <b>Rentabilidad:</b> {rent}<br><small>{desc}</small>
+        </div>""", unsafe_allow_html=True)
+        st.link_button(f"Ver opciones de {nom}", "https://google.com")
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.write("### 🟢 Bajo Riesgo")
+        draw_inv("Depósitos / Cuentas", "Bajo", "2-4%", "Dinero seguro y disponible.", rec=(perfil=="Conservador"))
+        draw_inv("Renta Fija", "Bajo", "3-4%", "Bonos del estado y deuda corporativa.")
+    with c2:
+        st.write("### 🟡 Moderado")
+        draw_inv("Fondos Indexados", "Medio", "7-9%", "La mejor opción a largo plazo.", rec=(perfil=="Moderado"))
+        draw_inv("Robo-advisors", "Medio", "6-8%", "Gestión pasiva diversificada.")
+    with c3:
+        st.write("### 🔴 Arriesgado")
+        draw_inv("Acciones / ETFs", "Alto", "Variable", "Inversión directa en bolsa.", rec=(perfil=="Arriesgado"))
+        draw_inv("Cripto / Otros", "Muy Alto", "Variable", "Solo para capital especulativo.")
