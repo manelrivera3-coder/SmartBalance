@@ -4,119 +4,108 @@ import plotly.graph_objects as go
 # 1. CONFIGURACIÓ DE LA PÀGINA
 st.set_page_config(page_title="SmartBalance", layout="wide", page_icon="💰")
 
-# Estils CSS per maximitzar l'espai vertical i eliminar scroll
+# Estils CSS
 st.markdown("""
     <style>
-    .block-container { padding-top: 1rem; padding-bottom: 0rem; }
     .main { background-color: #f8f9fa; }
-    .stMetric { background-color: #ffffff; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .company-box { 
-        background-color: #ffffff; 
-        padding: 5px; 
-        border-radius: 5px; 
-        border: 1px solid #eee; 
-        text-align: center; 
-        font-size: 0.85rem;
-        line-height: 1.2;
-    }
-    div[data-testid="stVerticalBlock"] > div { font-size: 0.9rem; }
-    h1 { font-size: 1.8rem !important; margin-bottom: 0.5rem; }
-    h2 { font-size: 1.4rem !important; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-    h3 { font-size: 1.1rem !important; margin-top: 0.2rem; }
+    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .company-box { background-color: #ffffff; padding: 10px; border-radius: 5px; border: 1px solid #ddd; text-align: center; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DICCIONARI DE TEXTOS
+# 2. DICCIONARI DE TEXTOS (Traducció 100%)
 texts = {
     "Español": {
         "setup": "Configuración",
         "idioma": "Idioma",
         "titol": "SmartBalance 💰",
-        "subtitol": "Ordena tus finanzas",
-        "tab1": "📊 Radiografía",
-        "tab2": "✂️ Ahorro",
+        "subtitol": "Ordena tus finanzas y construye tu futuro",
+        "tab1": "📊 Mi Radiografía",
+        "tab2": "✂️ Plan de Ahorro",
         "tab3": "📈 Inversión",
         "tab4": "🎓 Educación",
-        "ingresos_label": "Ingresos netos (€)",
-        "gastos_f": "Gastos Mensuales",
-        "lloguer": "Alquiler/Hipo",
-        "internet": "Internet",
+        "ingresos_label": "Ingresos mensuales netos (€)",
+        "gastos_f": "Gastos Fijos Mensuales",
+        "lloguer": "Alquiler / Hipoteca",
+        "internet": "Internet (Fibra)",
         "mobil": "Móvil",
-        "llum": "Luz",
+        "llum": "Luz (Electricidad)",
         "gas": "Gas",
         "aigua": "Agua",
-        "deutes": "Deudas",
-        "total_gastos": "Gastos Fijos",
-        "oci_recom": "Ocio (30%)",
-        "ahorro_recom": "Ahorro (20%)",
-        "disponible": "Disponible",
-        "ratio_label": "% Ingresos",
-        "veredicte": "Veredicto",
-        "error_bloqueo": "⚠️ Completa los datos en 'Radiografía'.",
-        "btn_save": "Ver Oferta",
-        "ahorro_anual": "Ahorro anual",
-        "perfecto": "¡Precio OK!",
-        "perfil_riesgo": "Riesgo",
+        "deutes": "Préstamos / Deudas",
+        "total_gastos": "Total Gastos Fijos (50%)",
+        "oci_recom": "Presupuesto Ocio (30%)",
+        "ahorro_recom": "Objetivo Ahorro (20%)",
+        "disponible": "Disponible Total",
+        "ratio_label": "% de tus ingresos",
+        "veredicte": "Tu Veredicto Financiero",
+        "error_bloqueo": "⚠️ Por favor, completa tus datos en la pestaña 'Mi Radiografía' para desbloquear el resto.",
+        "btn_save": "Contratar Oferta",
+        "ahorro_anual": "Ahorro anual estimado",
+        "perfecto": "¡Precio perfecto!",
+        "perfil_riesgo": "Tu perfil de riesgo",
         "perfils": ["Conservador", "Moderado", "Decidido"],
-        "simulador_t": "Simulador",
+        "simulador_t": "Simulador de Crecimiento",
         "años": "Años",
-        "inv_mensual": "Inversión (€)",
-        "resultado_inv": "Total: {1} €",
-        "top_3": "Mejores ofertas:"
+        "inv_mensual": "Inversión mensual (€)",
+        "resultado_inv": "En {0} años podrías tener: {1} €",
+        "top_3": "Top 3 mejores ofertas actuales:"
     },
     "English": {
         "setup": "Setup",
         "idioma": "Language",
         "titol": "SmartBalance 💰",
-        "subtitol": "Organize your finances",
-        "tab1": "📊 Radiography",
-        "tab2": "✂️ Saving",
-        "tab3": "📈 Invest",
+        "subtitol": "Organize your finances and build your future",
+        "tab1": "📊 My Radiography",
+        "tab2": "✂️ Saving Plan",
+        "tab3": "📈 Investment",
         "tab4": "🎓 Education",
-        "ingresos_label": "Net Income (€)",
-        "gastos_f": "Monthly Expenses",
-        "lloguer": "Rent/Mortgage",
-        "internet": "Internet",
+        "ingresos_label": "Net Monthly Income (€)",
+        "gastos_f": "Monthly Fixed Expenses",
+        "lloguer": "Rent / Mortgage",
+        "internet": "Internet (Fiber)",
         "mobil": "Mobile",
-        "llum": "Power",
+        "llum": "Power (Electricity)",
         "gas": "Gas",
         "aigua": "Water",
-        "deutes": "Debts",
-        "total_gastos": "Fixed Costs",
-        "oci_recom": "Leisure (30%)",
-        "ahorro_recom": "Savings (20%)",
-        "disponible": "Available",
-        "ratio_label": "% Income",
-        "veredicte": "Verdict",
-        "error_bloqueo": "⚠️ Fill data in 'Radiography'.",
-        "btn_save": "View Offer",
-        "ahorro_anual": "Annual saving",
-        "perfecto": "Great price!",
-        "perfil_riesgo": "Risk",
+        "deutes": "Loans / Debts",
+        "total_gastos": "Total Fixed Expenses (50%)",
+        "oci_recom": "Leisure Budget (30%)",
+        "ahorro_recom": "Savings Goal (20%)",
+        "disponible": "Total Available",
+        "ratio_label": "% of your income",
+        "veredicte": "Your Financial Verdict",
+        "error_bloqueo": "⚠️ Please, fill in your data in the 'My Radiography' tab to unlock the rest.",
+        "btn_save": "Get Offer",
+        "ahorro_anual": "Estimated annual savings",
+        "perfecto": "Perfect price!",
+        "perfil_riesgo": "Your risk profile",
         "perfils": ["Conservative", "Moderate", "Aggressive"],
-        "simulador_t": "Simulator",
+        "simulador_t": "Growth Simulator",
         "años": "Years",
-        "inv_mensual": "Invest (€)",
-        "resultado_inv": "Total: {1} €",
-        "top_3": "Best offers:"
+        "inv_mensual": "Monthly Investment (€)",
+        "resultado_inv": "In {0} years you could have: {1} €",
+        "top_3": "Top 3 best current offers:"
     }
 }
 
-# 3. SIDEBAR
+# 3. SIDEBAR - SELECCIÓ D'IDIOMA I INPUTS
 with st.sidebar:
     idioma = st.selectbox("Language / Idioma", ["Español", "English"])
     t = texts[idioma]
+    
+    st.divider()
     st.header(t["gastos_f"])
-    ingresos_val = st.number_input(t["ingresos_label"], min_value=0, value=2000, step=100)
-    lloguer_val = st.number_input(t["lloguer"], min_value=0, value=800)
-    llum_val = st.number_input(t["llum"], min_value=0, value=60)
-    gas_val = st.number_input(t["gas"], min_value=0, value=30)
-    aigua_val = st.number_input(t["aigua"], min_value=0, value=25)
-    internet_val = st.number_input(t["internet"], min_value=0, value=40)
-    mobil_val = st.number_input(t["mobil"], min_value=0, value=20)
+    ingresos_val = st.number_input(t["ingresos_label"], min_value=0, value=0, step=100)
+    lloguer_val = st.number_input(t["lloguer"], min_value=0, value=0)
+    llum_val = st.number_input(t["llum"], min_value=0, value=0)
+    gas_val = st.number_input(t["gas"], min_value=0, value=0)
+    aigua_val = st.number_input(t["aigua"], min_value=0, value=0)
+    internet_val = st.number_input(t["internet"], min_value=0, value=0)
+    mobil_val = st.number_input(t["mobil"], min_value=0, value=0)
     deute_val = st.number_input(t["deutes"], min_value=0, value=0)
 
-# Càlculs
+# Càlculs base
 total_gastos = lloguer_val + llum_val + gas_val + aigua_val + internet_val + mobil_val + deute_val
 ratio = (total_gastos / ingresos_val * 100) if ingresos_val > 0 else 0
 disponible_total = max(0, ingresos_val - total_gastos)
@@ -129,64 +118,94 @@ tab1, tab2, tab3, tab4 = st.tabs([t["tab1"], t["tab2"], t["tab3"], t["tab4"]])
 
 # --- TAB 1: RADIOGRAFIA ---
 with tab1:
+    st.title(t["titol"])
+    st.write(t["subtitol"])
+    if ingresos_val == 0: st.info(t["error_bloqueo"])
+    
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric(t["total_gastos"], f"{total_gastos}€")
-    c2.metric(t["ratio_label"], f"{ratio:.1f}%")
-    c3.metric(t["oci_recom"], f"{int(oci_real)}€")
-    c4.metric(t["ahorro_recom"], f"{int(ahorro_real)}€")
+    c1.metric(t["total_gastos"], f"{total_gastos} €")
+    c2.metric(t["ratio_label"], f"{ratio:.1f}%", delta="-50%" if ratio > 50 else "OK", delta_color="inverse" if ratio > 50 else "normal")
+    c3.metric(t["oci_recom"], f"{int(oci_real)} €")
+    c4.metric(t["ahorro_recom"], f"{int(ahorro_real)} €")
 
     if is_ready:
-        col_l, col_r = st.columns([1.2, 1])
+        st.divider()
+        col_l, col_r = st.columns(2)
         with col_l:
-            labels = [t["lloguer"], "Bills", t["deutes"], t["oci_recom"], t["ahorro_recom"]]
-            values = [lloguer_val, (llum_val+gas_val+aigua_val+internet_val+mobil_val), deute_val, oci_real, ahorro_real]
-            fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.5)])
-            fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250, showlegend=True)
+            labels = [t["lloguer"], t["llum"], t["gas"], t["aigua"], t["internet"], t["mobil"], t["deutes"], t["oci_recom"], t["ahorro_recom"]]
+            values = [lloguer_val, llum_val, gas_val, aigua_val, internet_val, mobil_val, deute_val, oci_real, ahorro_real]
+            fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4)])
             st.plotly_chart(fig, use_container_width=True)
         with col_r:
-            st.write(f"**Score: {max(0, 100 - int(ratio))}/100**")
-            st.progress(max(0, 100 - int(ratio)) / 100)
-            if ratio > 50: st.warning(t["veredicte"] + ": Recortar")
-            else: st.success(t["veredicte"] + ": OK")
+            st.subheader(t["veredicte"])
+            if ratio > 50: st.error("🚨" + (" Gastos altos." if idioma == "Español" else " High expenses."))
+            else: st.success("✅" + (" Controlado." if idioma == "Español" else " Controlled."))
+            score = max(0, 100 - int(ratio))
+            st.write(f"**Score: {score}/100**")
+            st.progress(score / 100)
 
-# --- TAB 2: AHORRO (COMPACTE) ---
+# --- TAB 2: PLAN DE AHORRO (MONETITZACIÓ) ---
 with tab2:
-    if not is_ready: st.warning(t["error_bloqueo"])
+    if not is_ready:
+        st.warning(t["error_bloqueo"])
     else:
-        db_ofertes = {
-            "internet": [{"cia": "Digi", "p": 25}, {"cia": "Lowi", "p": 29}, {"cia": "O2", "p": 35}],
-            "mobil": [{"cia": "Simyo", "p": 7}, {"cia": "Pepe", "p": 10}, {"cia": "Fine", "p": 12}],
-            "llum": [{"cia": "Octo", "p": "Low"}, {"cia": "Natur", "p": "Fix"}, {"cia": "Ende", "p": "Pro"}]
-        }
+        st.header(t["tab2"])
         
-        def draw_compact_row(label, val, key):
-            st.write(f"**{label}** ({val}€)")
+        # Base de dades d'ofertes (Simulada - Aquí posaràs els teus afiliats)
+        db_ofertes = {
+            "internet": [
+                {"cia": "Digi", "preu": 25.0, "link": "https://digimobil.es"},
+                {"cia": "Lowi", "preu": 29.9, "link": "https://lowi.es"},
+                {"cia": "O2", "preu": 35.0, "link": "https://o2online.es"}
+            ],
+            "mobil": [
+                {"cia": "Simyo", "preu": 7.0, "link": "https://simyo.es"},
+                {"cia": "Pepephone", "preu": 10.0, "link": "https://pepephone.com"},
+                {"cia": "Finetwork", "preu": 12.0, "link": "https://finetwork.com"}
+            ],
+            "llum": [
+                {"cia": "Octopus", "preu": "Market -15%", "link": "https://octopusenergy.es"},
+                {"cia": "Naturgy", "preu": "Fixed Rate", "link": "https://naturgy.es"},
+                {"cia": "Endesa", "preu": "Promo 24h", "link": "https://endesa.com"}
+            ]
+        }
+
+        def mostrar_seccio_estalvi(titol, valor_actual, clau_db):
+            st.subheader(f"✂️ {titol}")
+            best_price = db_ofertes[clau_db][0]["preu"] if isinstance(db_ofertes[clau_db][0]["preu"], float) else 0
+            
+            # Alerta d'estalvi
+            if isinstance(best_price, float) and valor_actual > best_price:
+                st.warning(f"{t['ahorro_anual']}: {(valor_actual - best_price)*12:.2f} €")
+            else:
+                st.success(t["perfecto"])
+
+            st.write(t["top_3"])
             cols = st.columns(3)
-            for i, of in enumerate(db_ofertes[key]):
+            for i, oferta in enumerate(db_ofertes[clau_db]):
                 with cols[i]:
-                    st.markdown(f"<div class='company-box'><b>{of['cia']}</b><br>{of['p']}€</div>", unsafe_allow_html=True)
-                    st.link_button(t["btn_save"], "https://google.com", use_container_width=True)
+                    st.markdown(f"""<div class='company-box'><b>{oferta['cia']}</b><br>{oferta['preu']}€</div>""", unsafe_allow_html=True)
+                    st.link_button(t["btn_save"], oferta["link"], use_container_width=True)
+            st.divider()
 
-        draw_compact_row(t["internet"], internet_val, "internet")
-        draw_compact_row(t["mobil"], mobil_val, "mobil")
-        draw_compact_row(t["llum"], llum_val, "llum")
+        mostrar_seccio_estalvi(t["internet"], internet_val, "internet")
+        mostrar_seccio_estalvi(t["mobil"], mobil_val, "mobil")
+        mostrar_seccio_estalvi(t["llum"], llum_val, "llum")
 
-# --- TAB 3: INVERSIÓN (COMPACTE) ---
+# --- TAB 3: INVERSIÓN ---
 with tab3:
     if not is_ready: st.warning(t["error_bloqueo"])
     else:
-        c1, c2 = st.columns(2)
-        with c1: perf = st.select_slider(t["perfil_riesgo"], options=t["perfils"])
-        with c2: anys = st.slider(t["años"], 1, 30, 10)
+        st.header(t["simulador_t"])
+        perf = st.select_slider(t["perfil_riesgo"], options=t["perfils"])
+        anys = st.slider(t["años"], 1, 30, 10)
         inv = st.slider(t["inv_mensual"], 0, int(ingresos_val), int(ahorro_real))
-        
         r = 0.03 if perf == t["perfils"][0] else (0.05 if perf == t["perfils"][1] else 0.08)
         final = 0
         for _ in range(anys * 12): final = (final + inv) * (1 + r/12)
         st.success(t["resultado_inv"].format(anys, f"{final:,.0f}"))
-        st.line_chart([(inv*i)*(1+r/12)**(i/12) for i in range(anys*12)], height=150)
 
 # --- TAB 4: EDUCACIÓN ---
 with tab4:
-    st.write("Academy 🎓")
-    st.info("50/30/20 Rule: 50% Needs, 30% Wants, 20% Savings.")
+    st.header(t["tab4"])
+    st.write("Contenido educativo en desarrollo...")
