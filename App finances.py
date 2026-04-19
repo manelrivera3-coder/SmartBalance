@@ -80,10 +80,20 @@ with st.sidebar:
 total_fijos = lloguer_val + credits_val + alim_val + gaso_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val
 ratio_fijos = (total_fijos / ing_val) * 100
 
+# --- DEFINICIÓ DE LES PESTANYES (Assegura't que n'hi ha 5) ---
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    t["tab1"],    # Radiografía
+    t["tab2"],    # Plan de Ahorro
+    t["tab3"],    # Centro de Deuda
+    "📈 Inversión", 
+    t["tab4"]     # Educación
+])
+
 # --- TAB 1: RADIOGRAFÍA ---
 with tab1:
     st.title(t["titol"])
     
+    # Mètriques (Fem servir les variables del Sidebar)
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Gastos Fijos Total", f"{total_fijos} €")
     c2.metric("Ratio de Gastos", f"{ratio_fijos:.1f}%", delta="Máx 50%", delta_color="inverse")
