@@ -1,83 +1,171 @@
 import streamlit as st
 import plotly.graph_objects as go
+import pandas as pd
 
-# Configuració de la pàgina
-st.set_page_config(page_title="Finances Sense Por", layout="wide", page_icon="💰")
+# 1. CONFIGURACIÓ DE LA PÀGINA
+st.set_page_config(page_title="SmartBalance - Personal Finance", layout="wide", page_icon="💰")
 
-# Estils personalitzats per fer-la més atractiva
+# Estils CSS per millorar l'aspecte
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
+    .main { background-color: #f8f9fa; }
     .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# Títol i Benvinguda
-st.title("💰 Finances Sense Por")
-st.subheader("La teva radiografia financera en 2 minuts")
-st.write("Introdueix les teves dades anònimament i mira on van els teus diners.")
-
-# --- BARRA LATERAL (INPUTS) ---
+# 2. SISTEMA MULTIDIOMA
 with st.sidebar:
-    st.header("Les teves dades")
-    ingressos = st.number_input("Ingressos nets mensuals (€)", min_value=0, value=2000, step=100)
-    
+    st.title("⚙️ Setup")
+    idioma = st.selectbox("Language / Idioma", ["Español", "English"])
     st.divider()
-    st.subheader("Despeses Fixes")
-    lloguer = st.number_input("Lloguer o Hipoteca (€)", min_value=0, value=800)
-    llum = st.number_input("Llum mensual (€)", min_value=0, value=80)
-    gas = st.number_input("Gas mensual (€)", min_value=0, value=40)
-    internet = st.number_input("Internet i Mòbil (€)", min_value=0, value=60)
-    aigua = st.number_input("Aigua (€)", min_value=0, value=30)
-    deutes = st.number_input("Crèdits/Préstecs (€)", min_value=0, value=0)
+    st.caption("SmartBalance v1.0 - 2026")
 
-# --- CÀLCULS LÒGICS ---
-total_fixes = lloguer + llum + gas + internet + aigua + deutes
-percentatge_fixes = (total_fixes / ingressos) * 100 if ingressos > 0 else 0
+texts = {
+    "Español": {
+        "titol": "SmartBalance 💰",
+        "subtitol": "Ordena tus finanzas y construye tu futuro",
+        "tab1": "📊 Radiografía Actual",
+        "tab2": "✂️ Plan de Ahorro",
+        "tab3": "📈 Inversión y Futuro",
+        "tab4": "🎓 Educación",
+        "ingresos": "Ingresos mensuales (€)",
+        "gastos_f": "Gastos Fijos",
+        "lloguer": "Alquiler/Hipoteca",
+        "subministraments": "Suministros (Luz, Gas, Internet)",
+        "deutes": "Deudas/Préstamos",
+        "resultat": "Tu veredicto",
+        "disponible": "Disponible",
+        "btn_save": "¡Cambiar y ahorrar!",
+        "invest_perfil": "Tu perfil de riesgo",
+        "perfils": ["Conservador", "Moderado", "Decidido"],
+        "interes_compost": "Simulador de Interés Compuesto"
+    },
+    "English": {
+        "titol": "SmartBalance 💰",
+        "subtitol": "Organize your finances and build your future",
+        "tab1": "📊 Current Health",
+        "tab2": "✂️ Saving Plan",
+        "tab3": "📈 Invest & Future",
+        "tab4": "🎓 Education",
+        "ingresos": "Monthly Income (€)",
+        "gastos_f": "Fixed Expenses",
+        "lloguer": "Rent/Mortgage",
+        "subministraments": "Utilities (Power, Gas, Internet)",
+        "deutes": "Debts/Loans",
+        "resultat": "Your Verdict",
+        "disponible": "Available",
+        "btn_save": "Switch & Save!",
+        "invest_perfil": "Your risk profile",
+        "perfils": ["Conservative", "Moderate", "Aggressive"],
+        "interes_compost": "Compound Interest Simulator"
+    }
+}
 
-# --- PANELL PRINCIPAL ---
-col1, col2, col3 = st.columns(3)
+t = texts[idioma]
 
-with col1:
-    st.metric(label="Total Despeses Fixes", value=f"{total_fixes} €")
-
-with col2:
-    # Color segons la salut financera
-    color = "normal" if percentatge_fixes <= 50 else "inverse"
-    st.metric(label="% sobre els teus ingressos", value=f"{percentatge_fixes:.1f} %", delta="-50%" if percentatge_fixes > 50 else "Ideal", delta_color=color)
-
-with col3:
-    disponible = ingressos - total_fixes
-    st.metric(label="Disponible per oci i estalvi", value=f"{disponible} €")
-
-st.divider()
-
-# --- GRÀFIC INTERACTIV (PLOTLY) ---
-col_left, col_right = st.columns([1, 1])
-
-with col_left:
-    st.write("### On van els teus diners?")
-    # Gràfic de formatge (Donut chart)
-    labels = ['Lloguer/Hipo', 'Subministraments', 'Deutes', 'Disponible']
-    values = [lloguer, (llum + gas + internet + aigua), deutes, disponible]
+# 3. INPUTS GLOBALS (Sidebar)
+with st.sidebar:
+    st.header(t["ingresos"])
+    ingresos_val = st.number_input("Amount", min_value=0, value=2000, step=100, label_visibility="collapsed")
     
-    fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4, marker_colors=['#FF4B4B', '#1C83E1', '#FACA2B', '#28A745'])])
-    fig.update_layout(margin=dict(t=0, b=0, l=0, r=0))
-    st.plotly_chart(fig, use_container_width=True)
+    st.header(t["gastos_f"])
+    lloguer_val = st.number_input(t["lloguer"], min_value=0, value=800)
+    internet_val = st.number_input("Internet + Mobile", min_value=0, value=60)
+    llum_val = st.number_input("Power / Luz", min_value=0, value=80)
+    gas_val = st.number_input("Gas", min_value=0, value=40)
+    deute_val = st.number_input(t["deutes"], min_value=0, value=0)
 
-with col_right:
-    st.write("### El teu veredicte")
+# Càlculs base
+total_gastos = lloguer_val + internet_val + llum_val + gas_val + deute_val
+ratio = (total_gastos / ingresos_val) * 100 if ingresos_val > 0 else 0
+disponible_val = ingresos_val - total_gastos
+
+# 4. ESTRUCTURA DE PESTANYES
+tab1, tab2, tab3, tab4 = st.tabs([t["tab1"], t["tab2"], t["tab3"], t["tab4"]])
+
+# --- PESTANYA 1: RADIOGRAFIA ---
+with tab1:
+    st.title(t["titol"])
+    st.write(t["subtitol"])
     
-    if percentatge_fixes > 50:
-        st.error(f"**Atenció:** Estàs gastant un {percentatge_fixes:.1f}% en necessitats fixes. La regla 50/30/20 diu que no hauries de passar del 50%.")
-        st.write("Tens molt marge de millora en els teus contractes. Anem a la següent pestanya per retallar!")
-    else:
-        st.success("**Bona feina!** Les teves despeses fixes estan sota control. Ets un candidat ideal per començar a invertir el que et sobra.")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total Expenses", f"{total_gastos} €")
+    c2.metric("% Income", f"{ratio:.1f}%", delta="-50%" if ratio > 50 else "OK", delta_color="inverse" if ratio > 50 else "normal")
+    c3.metric(t["disponible"], f"{disponible_val} €")
 
-    # Puntuació de salut financera (Gamificació)
-    puntuacio = max(0, 100 - int(percentatge_fixes))
-    st.write(f"#### La teva puntuació actual: **{puntuacio}/100**")
-    st.progress(puntuacio / 100)
+    col_l, col_r = st.columns(2)
+    with col_l:
+        fig = go.Figure(data=[go.Pie(labels=['Rent', 'Bills', 'Debts', 'Free'], 
+                                     values=[lloguer_val, internet_val+llum_val+gas_val, deute_val, disponible_val], 
+                                     hole=.4)])
+        st.plotly_chart(fig, use_container_width=True)
+    with col_r:
+        st.subheader(t["resultat"])
+        if ratio > 50:
+            st.error("🚨 Warning: Your fixed costs are too high. Go to 'Saving Plan'!")
+        else:
+            st.success("✅ Healthy! You have margin to invest.")
+        
+        score = max(0, 100 - int(ratio))
+        st.write(f"**Financial Score: {score}/100**")
+        st.progress(score / 100)
 
-# --- BOTÓ PER SEGUIR ---
-st.button("Vull veure on puc estalviar ara mateix ➡️")
+# --- PESTANYA 2: PLAN DE AHORRO (AFILIATS) ---
+with tab2:
+    st.header("✂️ Smart Savings")
+    st.write("Compare your current bills with the best market offers (2026).")
+    
+    # Simulem millors preus del mercat
+    m_internet = 35.0
+    m_llum = 0.12 # €/kwh
+    
+    # Internet Row
+    col1, col2, col3 = st.columns([2, 2, 2])
+    with col1: st.write("**Service: Internet + Mobile**")
+    with col2: st.write(f"Current: {internet_val}€ | **Target: {m_internet}€**")
+    with col3: 
+        if internet_val > m_internet:
+            st.link_button(t["btn_save"], "https://google.com") # Aquí aniria el teu link d'afiliat
+            st.caption(f"Save {(internet_val-m_internet)*12}€/year")
+
+    st.divider()
+    
+    # Energy Row
+    col1, col2, col3 = st.columns([2, 2, 2])
+    with col1: st.write("**Service: Electricity**")
+    with col2: st.write(f"Current: {llum_val}€ | **Target: -25% average**")
+    with col3: st.link_button(t["btn_save"], "https://google.com")
+
+# --- PESTANYA 3: INVERSIÓ ---
+with tab3:
+    st.header(t["interes_compost"])
+    
+    perfil = st.select_slider(t["invest_perfil"], options=t["perfils"])
+    
+    # Simulació interès compost
+    years = st.slider("Years", 1, 30, 10)
+    monthly_inv = st.slider("Monthly Investment (€)", 0, 1000, 200)
+    
+    rate = 0.03 if perfil == t["perfils"][0] else (0.05 if perfil == t["perfils"][1] else 0.08)
+    
+    data = []
+    balance = 0
+    for i in range(years * 12):
+        balance = (balance + monthly_inv) * (1 + rate/12)
+        if i % 12 == 0:
+            data.append(balance)
+            
+    st.line_chart(data)
+    st.write(f"### In {years} years, you could have: **{int(balance)} €**")
+    st.info("Products: High Yield Accounts (Safe), Treasury Bonds (Moderate), Index Funds (Aggressive).")
+
+# --- PESTANYA 4: EDUCACIÓ ---
+with tab4:
+    st.header("🎓 Smart Academy")
+    with st.expander("¿Qué es la Regla 50/30/20?"):
+        st.write("50% Necesidades, 30% Deseos, 20% Ahorro/Inversión.")
+    with st.expander("What is Compound Interest?"):
+        st.write("It is the interest calculated on the initial principal, which also includes all of the accumulated interest of previous periods.")
+    with st.expander("¿Qué es un Fondo Monetario?"):
+        st.write("Una inversión de muy bajo riesgo ideal para tu colchón de emergencia.")
