@@ -4,27 +4,26 @@ import plotly.graph_objects as go
 # 1. CONFIGURACIÓ DE LA PÀGINA
 st.set_page_config(page_title="SmartBalance", layout="wide", page_icon="💰")
 
-# Estils CSS (Nets, sense trencar les pestanyes)
+# Estils CSS
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
     .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .company-box { 
         background-color: #ffffff; 
-        padding: 15px 10px; 
+        padding: 10px; 
         border-radius: 8px; 
         border: 1px solid #e0e0e0; 
         text-align: center; 
-        margin-bottom: 10px;
+        min-height: 140px;
     }
+    .company-box img { margin-bottom: 5px; border-radius: 4px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DICCIONARI DE TEXTOS (Traducció 100%)
+# 2. DICCIONARI DE TEXTOS
 texts = {
     "Español": {
-        "setup": "Configuración",
-        "idioma": "Idioma",
         "titol": "SmartBalance 💰",
         "subtitol": "Ordena tus finanzas y construye tu futuro",
         "tab1": "📊 Mi Radiografía",
@@ -43,24 +42,23 @@ texts = {
         "total_gastos": "Total Gastos Fijos (50%)",
         "oci_recom": "Presupuesto Ocio (30%)",
         "ahorro_recom": "Objetivo Ahorro (20%)",
-        "disponible": "Disponible Total",
         "ratio_label": "% de tus ingresos",
         "veredicte": "Tu Veredicto Financiero",
         "error_bloqueo": "⚠️ Por favor, completa tus datos en la pestaña 'Mi Radiografía' para desbloquear el resto.",
-        "btn_save": "Contratar Oferta",
+        "btn_save": "Ver Oferta",
         "ahorro_anual": "Ahorro anual estimado",
         "perfecto": "¡Precio perfecto!",
-        "perfil_riesgo": "Tu perfil de riesgo",
-        "perfils": ["Conservador", "Moderado", "Decidido"],
         "simulador_t": "Simulador de Crecimiento",
         "años": "Años",
         "inv_mensual": "Inversión mensual (€)",
         "resultado_inv": "En {0} años podrías tener: {1} €",
-        "top_3": "Top 3 mejores ofertas actuales:"
+        "search_btn": "Buscar mejores ofertas",
+        "filtro_fibra": "Velocidad Fibra",
+        "filtro_mobil": "Datos Móvil",
+        "filtro_llum": "Tipo de Tarifa",
+        "filtro_gas": "Consumo estimado"
     },
     "English": {
-        "setup": "Setup",
-        "idioma": "Language",
         "titol": "SmartBalance 💰",
         "subtitol": "Organize your finances and build your future",
         "tab1": "📊 My Radiography",
@@ -79,28 +77,28 @@ texts = {
         "total_gastos": "Total Fixed Expenses (50%)",
         "oci_recom": "Leisure Budget (30%)",
         "ahorro_recom": "Savings Goal (20%)",
-        "disponible": "Total Available",
         "ratio_label": "% of your income",
         "veredicte": "Your Financial Verdict",
         "error_bloqueo": "⚠️ Please, fill in your data in the 'My Radiography' tab to unlock the rest.",
-        "btn_save": "Get Offer",
+        "btn_save": "View Offer",
         "ahorro_anual": "Estimated annual savings",
         "perfecto": "Perfect price!",
-        "perfil_riesgo": "Your risk profile",
-        "perfils": ["Conservative", "Moderate", "Aggressive"],
         "simulador_t": "Growth Simulator",
         "años": "Years",
         "inv_mensual": "Monthly Investment (€)",
         "resultado_inv": "In {0} years you could have: {1} €",
-        "top_3": "Top 3 best current offers:"
+        "search_btn": "Search best offers",
+        "filtro_fibra": "Fiber Speed",
+        "filtro_mobil": "Mobile Data",
+        "filtro_llum": "Rate Type",
+        "filtro_gas": "Estimated Consumption"
     }
 }
 
-# 3. SIDEBAR - SELECCIÓ D'IDIOMA I INPUTS
+# 3. SIDEBAR
 with st.sidebar:
     idioma = st.selectbox("Language / Idioma", ["Español", "English"])
     t = texts[idioma]
-    
     st.divider()
     st.header(t["gastos_f"])
     ingresos_val = st.number_input(t["ingresos_label"], min_value=0, value=0, step=100)
@@ -112,7 +110,7 @@ with st.sidebar:
     mobil_val = st.number_input(t["mobil"], min_value=0, value=0)
     deute_val = st.number_input(t["deutes"], min_value=0, value=0)
 
-# Càlculs base
+# Càlculs
 total_gastos = lloguer_val + llum_val + gas_val + aigua_val + internet_val + mobil_val + deute_val
 ratio = (total_gastos / ingresos_val * 100) if ingresos_val > 0 else 0
 disponible_total = max(0, ingresos_val - total_gastos)
@@ -123,7 +121,7 @@ is_ready = ingresos_val > 0 and total_gastos > 0
 # 4. PESTANYES
 tab1, tab2, tab3, tab4 = st.tabs([t["tab1"], t["tab2"], t["tab3"], t["tab4"]])
 
-# --- TAB 1: RADIOGRAFIA (Restaurada exactament com la tenies) ---
+# --- TAB 1: RADIOGRAFIA ---
 with tab1:
     st.title(t["titol"])
     st.write(t["subtitol"])
@@ -151,75 +149,65 @@ with tab1:
             st.write(f"**Score: {score}/100**")
             st.progress(score / 100)
 
-# --- TAB 2: PLAN DE AHORRO (Amb logos i gas) ---
+# --- TAB 2: PLAN DE AHORRO (FILTRAT FINET) ---
 with tab2:
     if not is_ready:
         st.warning(t["error_bloqueo"])
     else:
         st.header(t["tab2"])
         
-        # Base de dades d'ofertes amb preus numèrics i domini (per extreure el logo)
-        db_ofertes = {
-            "internet": [
-                {"cia": "Digi", "preu": 25.0, "link": "https://digimobil.es", "domain": "digimobil.es"},
-                {"cia": "Lowi", "preu": 29.9, "link": "https://lowi.es", "domain": "lowi.es"},
-                {"cia": "O2", "preu": 35.0, "link": "https://o2online.es", "domain": "o2online.es"}
-            ],
-            "mobil": [
-                {"cia": "Simyo", "preu": 7.0, "link": "https://simyo.es", "domain": "simyo.es"},
-                {"cia": "Pepephone", "preu": 10.0, "link": "https://pepephone.com", "domain": "pepephone.com"},
-                {"cia": "Finetwork", "preu": 12.0, "link": "https://finetwork.com", "domain": "finetwork.com"}
-            ],
-            "llum": [
-                {"cia": "Octopus", "preu": 40.0, "link": "https://octopusenergy.es", "domain": "octopusenergy.es"},
-                {"cia": "Naturgy", "preu": 45.0, "link": "https://naturgy.es", "domain": "naturgy.es"},
-                {"cia": "Endesa", "preu": 50.0, "link": "https://endesa.com", "domain": "endesa.com"}
-            ],
-            "gas": [
-                {"cia": "Naturgy", "preu": 25.0, "link": "https://naturgy.es", "domain": "naturgy.es"},
-                {"cia": "Endesa", "preu": 28.0, "link": "https://endesa.com", "domain": "endesa.com"},
-                {"cia": "TotalEnergies", "preu": 30.0, "link": "https://totalenergies.es", "domain": "totalenergies.es"}
-            ]
-        }
-
-        def mostrar_seccio_estalvi(icona, titol, valor_actual, clau_db):
-            st.subheader(f"{icona} {titol}")
-            best_price = db_ofertes[clau_db][0]["preu"]
-            
-            # Alerta d'estalvi
-            if valor_actual > best_price:
-                st.warning(f"💡 {t['ahorro_anual']}: {(valor_actual - best_price)*12:.2f} €")
-            else:
-                st.success(t["perfecto"])
-
+        # --- SECCIÓ INTERNET ---
+        with st.expander("🌐 " + t["internet"], expanded=True):
+            f_fibra = st.select_slider(t["filtro_fibra"], options=["300Mb", "600Mb", "1Gb"])
+            db_int = {
+                "300Mb": [{"cia": "Digi", "p": 20.0, "d": "digimobil.es"}, {"cia": "Lowi", "p": 24.0, "d": "lowi.es"}, {"cia": "O2", "p": 27.0, "d": "o2online.es"}],
+                "600Mb": [{"cia": "Digi", "p": 25.0, "d": "digimobil.es"}, {"cia": "Lowi", "p": 29.0, "d": "lowi.es"}, {"cia": "O2", "p": 31.0, "d": "o2online.es"}],
+                "1Gb": [{"cia": "Digi", "p": 30.0, "d": "digimobil.es"}, {"cia": "Simyo", "p": 32.0, "d": "simyo.es"}, {"cia": "Vodafone", "p": 40.0, "d": "vodafone.es"}]
+            }
             cols = st.columns(3)
-            for i, oferta in enumerate(db_ofertes[clau_db]):
+            for i, of in enumerate(db_int[f_fibra]):
                 with cols[i]:
-                    # Codi HTML per mostrar el logo des de Clearbit, el nom en negreta i el preu
-                    st.markdown(f"""
-                    <div class='company-box'>
-                        <img src='https://logo.clearbit.com/{oferta["domain"]}' width='45' style='margin-bottom:8px; border-radius:4px;' onerror="this.style.display='none'">
-                        <br><b>{oferta['cia']}</b><br>{oferta['preu']}€
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.link_button(t["btn_save"], oferta["link"], use_container_width=True)
-            st.divider()
+                    st.markdown(f"<div class='company-box'><img src='https://logo.clearbit.com/{of['d']}' width='40'><br><b>{of['cia']}</b><br>{of['p']}€</div>", unsafe_allow_html=True)
+                    st.link_button(t["btn_save"], f"https://{of['d']}", use_container_width=True)
 
-        # Crides a la funció amb les icones sol·licitades
-        mostrar_seccio_estalvi("🌐", t["internet"], internet_val, "internet")
-        mostrar_seccio_estalvi("📲", t["mobil"], mobil_val, "mobil")
-        mostrar_seccio_estalvi("💡", t["llum"], llum_val, "llum")
-        mostrar_seccio_estalvi("🔥", t["gas"], gas_val, "gas")
+        # --- SECCIÓ MÒBIL ---
+        with st.expander("📲 " + t["mobil"], expanded=True):
+            f_mob = st.select_slider(t["filtro_mobil"], options=["10GB", "50GB", "Unlimited"])
+            db_mob = {
+                "10GB": [{"cia": "Simyo", "p": 7.0, "d": "simyo.es"}, {"cia": "Lowi", "p": 7.9, "d": "lowi.es"}, {"cia": "Digi", "p": 8.0, "d": "digimobil.es"}],
+                "50GB": [{"cia": "Pepephone", "p": 14.9, "d": "pepephone.com"}, {"cia": "O2", "p": 15.0, "d": "o2online.es"}, {"cia": "Finetwork", "p": 16.0, "d": "finetwork.com"}],
+                "Unlimited": [{"cia": "Vodafone", "p": 25.0, "d": "vodafone.es"}, {"cia": "Movistar", "p": 30.0, "d": "movistar.es"}, {"cia": "Orange", "p": 32.0, "d": "orange.es"}]
+            }
+            cols = st.columns(3)
+            for i, of in enumerate(db_mob[f_mob]):
+                with cols[i]:
+                    st.markdown(f"<div class='company-box'><img src='https://logo.clearbit.com/{of['d']}' width='40'><br><b>{of['cia']}</b><br>{of['p']}€</div>", unsafe_allow_html=True)
+                    st.link_button(t["btn_save"], f"https://{of['d']}", use_container_width=True)
+
+        # --- SECCIÓ LLUM I GAS ---
+        c_l, c_g = st.columns(2)
+        with c_l:
+            with st.expander("💡 " + t["llum"], expanded=True):
+                st.selectbox(t["filtro_llum"], ["Tarifa Fija", "Indexada (Variable)", "Discriminación Horaria"])
+                for of in [{"cia": "Octopus", "p": "Bajo", "d": "octopusenergy.es"}, {"cia": "Naturgy", "p": "Fijo", "d": "naturgy.es"}]:
+                    st.markdown(f"<div class='company-box' style='min-height:100px'><img src='https://logo.clearbit.com/{of['d']}' width='35'><br><b>{of['cia']}</b></div>", unsafe_allow_html=True)
+                    st.link_button(t["btn_save"], f"https://{of['d']}", use_container_width=True)
+        with c_g:
+            with st.expander("🔥 " + t["gas"], expanded=True):
+                st.selectbox(t["filtro_gas"], ["< 5.000 kWh/año", "> 5.000 kWh/año"])
+                for of in [{"cia": "Endesa", "p": "TUR", "d": "endesa.com"}, {"cia": "Total", "p": "Ahorro", "d": "totalenergies.es"}]:
+                    st.markdown(f"<div class='company-box' style='min-height:100px'><img src='https://logo.clearbit.com/{of['d']}' width='35'><br><b>{of['cia']}</b></div>", unsafe_allow_html=True)
+                    st.link_button(t["btn_save"], f"https://{of['d']}", use_container_width=True)
 
 # --- TAB 3: INVERSIÓN ---
 with tab3:
     if not is_ready: st.warning(t["error_bloqueo"])
     else:
         st.header(t["simulador_t"])
-        perf = st.select_slider(t["perfil_riesgo"], options=t["perfils"])
+        perf = st.select_slider("Perfil", options=["Conservador", "Moderado", "Decidido"])
         anys = st.slider(t["años"], 1, 30, 10)
         inv = st.slider(t["inv_mensual"], 0, int(ingresos_val), int(ahorro_real))
-        r = 0.03 if perf == t["perfils"][0] else (0.05 if perf == t["perfils"][1] else 0.08)
+        r = 0.03 if perf == "Conservador" else (0.05 if perf == "Moderado" else 0.08)
         final = 0
         for _ in range(anys * 12): final = (final + inv) * (1 + r/12)
         st.success(t["resultado_inv"].format(anys, f"{final:,.0f}"))
@@ -227,4 +215,4 @@ with tab3:
 # --- TAB 4: EDUCACIÓN ---
 with tab4:
     st.header(t["tab4"])
-    st.write("Contenido educativo en desarrollo...")
+    st.write("Academy 🎓")
