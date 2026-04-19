@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 # 1. CONFIGURACIÓ DE LA PÀGINA
 st.set_page_config(page_title="SmartBalance", layout="wide", page_icon="💰")
 
-# Estils CSS (Sense logos, més net i enfocat a l'estalvi)
+# Estils CSS
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
@@ -32,7 +32,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. DICCIONARI DE TEXTOS
+# 2. DICCIONARI DE TEXTOS (Actualitzat amb Assegurances)
 texts = {
     "Español": {
         "titol": "SmartBalance 💰",
@@ -49,6 +49,7 @@ texts = {
         "llum": "Luz (Electricidad)",
         "gas": "Gas",
         "aigua": "Agua",
+        "seguro_coche": "Seguro Coche (Mensual)",
         "deutes": "Préstamos / Deudas",
         "total_gastos": "Total Gastos Fijos (50%)",
         "oci_recom": "Presupuesto Ocio (30%)",
@@ -66,7 +67,8 @@ texts = {
         "preu_kwh_actual": "¿A cuánto pagas el kWh? (€)",
         "filtro_fibra": "Velocidad Fibra",
         "filtro_mobil": "Datos Móvil",
-        "filtro_gas": "Tipo de consumo"
+        "filtro_gas": "Tipo de consumo",
+        "filtro_seguro": "Tipo de Seguro"
     },
     "English": {
         "titol": "SmartBalance 💰",
@@ -83,6 +85,7 @@ texts = {
         "llum": "Power",
         "gas": "Gas",
         "aigua": "Water",
+        "seguro_coche": "Car Insurance (Monthly)",
         "deutes": "Debts",
         "total_gastos": "Total Fixed (50%)",
         "oci_recom": "Leisure (30%)",
@@ -100,11 +103,12 @@ texts = {
         "preu_kwh_actual": "Price per kWh (€)",
         "filtro_fibra": "Fiber Speed",
         "filtro_mobil": "Mobile Data",
-        "filtro_gas": "Gas Usage"
+        "filtro_gas": "Gas Usage",
+        "filtro_seguro": "Insurance Type"
     }
 }
 
-# 3. SIDEBAR
+# 3. SIDEBAR (Afegit Seguro Coche)
 with st.sidebar:
     idioma = st.selectbox("Language / Idioma", ["Español", "English"])
     t = texts[idioma]
@@ -116,9 +120,11 @@ with st.sidebar:
     aigua_val = st.number_input(t["aigua"], min_value=0, value=20)
     internet_val = st.number_input(t["internet"], min_value=0, value=35)
     mobil_val = st.number_input(t["mobil"], min_value=0, value=15)
+    seguro_val = st.number_input(t["seguro_coche"], min_value=0, value=40) # Camp nou
     deute_val = st.number_input(t["deutes"], min_value=0, value=0)
 
-total_gastos = lloguer_val + llum_val + gas_val + aigua_val + internet_val + mobil_val + deute_val
+# Càlculs Radiografia (Inclou seguro)
+total_gastos = lloguer_val + llum_val + gas_val + aigua_val + internet_val + mobil_val + seguro_val + deute_val
 ratio = (total_gastos / ingresos_val * 100) if ingresos_val > 0 else 0
 disponible_total = max(0, ingresos_val - total_gastos)
 oci_real = disponible_total * 0.6 if ratio > 50 else ingresos_val * 0.3
@@ -140,8 +146,8 @@ with tab1:
         st.divider()
         col_l, col_r = st.columns(2)
         with col_l:
-            labels = [t["lloguer"], t["llum"], t["gas"], t["aigua"], t["internet"], t["mobil"], t["deutes"], t["oci_recom"], t["ahorro_recom"]]
-            values = [lloguer_val, llum_val, gas_val, aigua_val, internet_val, mobil_val, deute_val, oci_real, ahorro_real]
+            labels = [t["lloguer"], t["llum"], t["gas"], t["aigua"], t["internet"], t["mobil"], t["seguro_coche"], t["deutes"], t["oci_recom"], t["ahorro_recom"]]
+            values = [lloguer_val, llum_val, gas_val, aigua_val, internet_val, mobil_val, seguro_val, deute_val, oci_real, ahorro_real]
             fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4)])
             fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=350)
             st.plotly_chart(fig, use_container_width=True)
@@ -159,9 +165,7 @@ with tab2:
         st.header(t["tab2"])
 
         def draw_offer_card(cia, preu_nou, preu_actual, unitat="€", is_kwh=False):
-            # Càlcul de l'estalvi anual
             if is_kwh:
-                # Simulació basada en un consum mitjà de 3000 kWh/any si és llum
                 estalvi_anual = (preu_actual - preu_nou) * 3000 if preu_actual > preu_nou else 0
             else:
                 estalvi_anual = (preu_actual - preu_nou) * 12 if preu_actual > preu_nou else 0
@@ -177,7 +181,7 @@ with tab2:
             st.link_button(t["btn_save"], "https://google.com", use_container_width=True)
 
         # 1. INTERNET
-        with st.expander("🌐 " + t["internet"], expanded=True):
+        with st.expander("🌐 " + t["internet"], expanded=False):
             f_fib = st.select_slider(t["filtro_fibra"], options=["300Mb", "600Mb", "1Gb"])
             db_int = {
                 "300Mb": [("Digi", 20), ("Lowi", 24), ("O2", 27)],
@@ -189,7 +193,7 @@ with tab2:
                 with c[i]: draw_offer_card(of[0], of[1], internet_val)
 
         # 2. LLUM
-        with st.expander("💡 " + t["llum"], expanded=True):
+        with st.expander("💡 " + t["llum"], expanded=False):
             kwh_usuari = st.number_input(t["preu_kwh_actual"], 0.0, 0.50, 0.18)
             db_llu = [("Octopus", 0.12), ("Naturgy", 0.13), ("Endesa", 0.14)]
             c = st.columns(3)
@@ -197,7 +201,7 @@ with tab2:
                 with c[i]: draw_offer_card(of[0], of[1], kwh_usuari, "€/kWh", True)
 
         # 3. MÒBIL
-        with st.expander("📲 " + t["mobil"], expanded=True):
+        with st.expander("📲 " + t["mobil"], expanded=False):
             f_mob = st.select_slider(t["filtro_mobil"], options=["20GB", "100GB", "Unlimited"])
             db_mob = {
                 "20GB": [("Simyo", 7), ("Lowi", 8), ("Digi", 10)],
@@ -209,12 +213,24 @@ with tab2:
                 with c[i]: draw_offer_card(of[0], of[1], mobil_val)
 
         # 4. GAS
-        with st.expander("🔥 " + t["gas"], expanded=True):
+        with st.expander("🔥 " + t["gas"], expanded=False):
             f_gas = st.selectbox(t["filtro_gas"], ["RL.1 (Agua/Cocina)", "RL.2 (Calefacción)"])
             db_gas = [("Naturgy", 20), ("Endesa", 22), ("TotalEnergies", 23)]
             c = st.columns(3)
             for i, of in enumerate(db_gas):
                 with c[i]: draw_offer_card(of[0], of[1], gas_val)
+
+        # 5. ASSEGURANÇA COTXE (Nova secció)
+        with st.expander("🚗 " + t["seguro_coche"], expanded=True):
+            f_seg = st.selectbox(t["filtro_seguro"], ["Terceros", "Terceros Ampliado", "Todo Riesgo"])
+            db_seg = {
+                "Terceros": [("Mapfre", 15), ("Direct", 18), ("Mutua", 20)],
+                "Terceros Ampliado": [("Allianz", 25), ("Axa", 28), ("Reale", 30)],
+                "Todo Riesgo": [("Mapfre", 45), ("Línea Directa", 50), ("Axa", 55)]
+            }
+            c = st.columns(3)
+            for i, of in enumerate(db_seg[f_seg]):
+                with c[i]: draw_offer_card(of[0], of[1], seguro_val)
 
 # --- TAB 3: INVERSIÓN ---
 with tab3:
