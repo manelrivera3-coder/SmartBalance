@@ -56,6 +56,10 @@ texts = {
     }
 }
 
+# Inicialitzar llista de deutes en session_state ABANS de cridar-la per evitar errors
+if 'deutes_lista' not in st.session_state:
+    st.session_state.deutes_lista = []
+
 # 3. SIDEBAR - ENTRADA DE DATOS PRINCIPALES
 with st.sidebar:
     idioma = st.selectbox("Idioma", ["Español"])
@@ -64,7 +68,7 @@ with st.sidebar:
     ing_val = st.number_input(t["ingresos_label"], min_value=1, value=2000)
     lloguer_val = st.number_input("Alquiler / Hipoteca (Cuota)", value=800)
     
-    # Afegim el camp de Crèdits directament aquí
+    # Camp de Crèdits al menú lateral per vincular-ho a la Pestanya 1
     credits_val = st.number_input("Otros Créditos / Préstamos", value=0)
     
     alim_val = st.number_input("Alimentación (Súper)", value=350)
@@ -76,16 +80,21 @@ with st.sidebar:
     mob_val = st.number_input("Móvil", value=15)
     seg_val = st.number_input(t["seguro_coche"], value=40)
 
-# Càlcul global només basat en el Sidebar
+# 4. CÀLCULS GLOBALS
+# total_fijos només inclou el que s'introdueix a la barra lateral
 total_fijos = lloguer_val + credits_val + alim_val + gaso_val + llum_val + gas_val + aigua_val + int_val + mob_val + seg_val
-ratio_fijos = (total_fijos / ing_val) * 100
+ratio_fijos = (total_fijos / ing_val) * 100 if ing_val > 0 else 0
+is_ready = ing_val > 0 and total_fijos > 0
 
-# --- DEFINICIÓ DE LES PESTANYES (Assegura't que n'hi ha 5) ---
+# Calcular total cuotas de deuda exclusiu per a la Pestaña 3 i ratios d'endeutament
+total_cuotas_deuda = sum(d['cuota'] for d in st.session_state.deutes_lista)
+
+# 5. PESTAÑAS (Ara en són 5 en total)
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     t["tab1"],    # Radiografía
     t["tab2"],    # Plan de Ahorro
     t["tab3"],    # Centro de Deuda
-    "📈 Inversión", 
+    "📈 Inversión", # Inversión
     t["tab4"]     # Educación
 ])
 
@@ -93,7 +102,6 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 with tab1:
     st.title(t["titol"])
     
-    # Mètriques (Fem servir les variables del Sidebar)
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Gastos Fijos Total", f"{total_fijos} €")
     c2.metric("Ratio de Gastos", f"{ratio_fijos:.1f}%", delta="Máx 50%", delta_color="inverse")
@@ -101,20 +109,16 @@ with tab1:
     c4.metric("Ahorro Ideal (20%)", f"{int(ing_val * 0.2)} €")
 
     st.divider()
-    
     col_l, col_r = st.columns([1, 1])
     with col_l:
-        # Gràfic que reflexa només el Sidebar
         labels = ["Vivienda", "Créditos", "Alimentación", "Otros Fijos", "Sobrante"]
         otros_fijos = llum_val + gas_val + aigua_val + int_val + mob_val + seg_val + gaso_val
         sobrante = max(0, ing_val - total_fijos)
-        
         values = [lloguer_val, credits_val, alim_val, otros_fijos, sobrante]
         
         fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4)])
         fig.update_layout(height=400, margin=dict(t=0, b=0, l=0, r=0))
         st.plotly_chart(fig, use_container_width=True)
-        
     with col_r:
         st.subheader(t["veredicte_t"])
         if ratio_fijos <= 50:
@@ -161,8 +165,8 @@ with tab2:
             with cc: draw_offer("Mapfre", round(p_base*1.3, 2), seg_val, "https://google.com")
 
         # SECCIÓN INTERNET Y LUZ
-        col_l, col_r = st.columns(2)
-        with col_l:
+        col_l2, col_r2 = st.columns(2)
+        with col_l2:
             with st.expander("🌐 Internet y Fibra"):
                 f_f = st.select_slider(t["filtro_fibra"], options=["300Mb", "600Mb", "1Gb"])
                 p_f = 20 if f_f=="300Mb" else (25 if f_f=="600Mb" else 30)
@@ -170,7 +174,7 @@ with tab2:
                 with c1: draw_offer("Digi", p_f, int_val, "https://google.com")
                 with c2: draw_offer("Lowi", p_f+4, int_val, "https://google.com")
                 with c3: draw_offer("O2", p_f+7, int_val, "https://google.com")
-        with col_r:
+        with col_r2:
             with st.expander("💡 Luz"):
                 kwh_in = st.number_input(t["preu_kwh_actual"], 0.0, 0.5, 0.18)
                 c1, c2, c3 = st.columns(3)
@@ -179,8 +183,8 @@ with tab2:
                 with c3: draw_offer("Endesa", 0.14, kwh_in, "https://google.com", "€/kWh", True)
 
         # SECCIÓN MÓVIL Y GAS
-        col_l2, col_r2 = st.columns(2)
-        with col_l2:
+        col_l3, col_r3 = st.columns(2)
+        with col_l3:
             with st.expander("📲 Móvil"):
                 f_m = st.select_slider(t["filtro_mobil"], options=["20GB", "100GB", "Unlimited"])
                 p_m = 7 if f_m=="20GB" else (15 if f_m=="100GB" else 25)
@@ -188,7 +192,7 @@ with tab2:
                 with c1: draw_offer("Simyo", p_m, mob_val, "https://google.com")
                 with c2: draw_offer("Pepephone", p_m+3, mob_val, "https://google.com")
                 with c3: draw_offer("Vodafone", p_m+10, mob_val, "https://google.com")
-        with col_r2:
+        with col_r3:
             with st.expander("🔥 Gas"):
                 c1, c2, c3 = st.columns(3)
                 with c1: draw_offer("Energía XXI", 18, gas_val, "https://google.com")
@@ -221,7 +225,7 @@ with tab3:
             status_class = "neutral-debt"
             consejo = ""
             btn_txt = ""
-            link = "https://google.com" # Espacio para tus referidos
+            link = "https://google.com" 
 
             if d['tipus'] == "Hipoteca":
                 if d['interes'] > 3.8:
@@ -253,7 +257,7 @@ with tab3:
                 st.rerun()
 
         st.divider()
-        ratio_endeudamiento = (total_cuotas_deuda / ing_val) * 100
+        ratio_endeudamiento = (total_cuotas_deuda / ing_val) * 100 if ing_val > 0 else 0
         st.subheader("Ratio de Endeudamiento Total")
         col_res1, col_res2 = st.columns(2)
         col_res1.metric("Cuotas de Deuda", f"{total_cuotas_deuda} €")
@@ -263,7 +267,7 @@ with tab3:
             st.error("🛑 **Alerta:** Tu deuda supera el 35% de tus ingresos. Recomendamos una **Reunificación de Deuda** para bajar la cuota total.")
             st.link_button("🆘 Solicitar Reunificación", "https://google.com")
 
-# --- TAB 4: INVERSIÓN (NOVA) ---
+# --- TAB 4: INVERSIÓN ---
 with tab4:
     st.header("📈 Tu Estrategia de Inversión")
     st.write("Una vez optimizado el ahorro y analizada la deuda, es hora de poner a trabajar tu dinero.")
@@ -312,3 +316,12 @@ with tab4:
         st.write("### 🔴 Arriesgado")
         draw_inv("Acciones / ETFs", "Alto", "Variable", "Inversión directa en bolsa.", rec=(perfil=="Arriesgado"))
         draw_inv("Cripto / Otros", "Muy Alto", "Variable", "Solo para capital especulativo.")
+
+# --- TAB 5: EDUCACIÓN ---
+with tab5:
+    st.header("Conceptos Clave")
+    st.write("1. **¿Qué es un buen interés?**")
+    st.write("- Hipotecas: < 3.5% TIN")
+    st.write("- Préstamos personales: < 8% TIN")
+    st.write("- Tarjetas Revolving: > 20% suele ser reclamable.")
+    st.info("La clave no es no tener deuda, sino que la deuda sea BARATA y no supere el 35% de tus ingresos.")
