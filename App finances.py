@@ -197,35 +197,106 @@ if calcular and ingresos > 0:
         st.write(explicar(principal["tipo"], ratio, ratio_deuda))
 
     # -----------------------
-    # PLAN DE ACCIÓN + MONETIZACIÓN
-    # -----------------------
-    st.header("💡 Plan de acción")
+# PLAN DE ACCIÓN INTELIGENTE
+# -----------------------
+st.header("💡 Plan de acción inteligente")
 
-    for p in problemas:
+def analisis_global(total, ingresos, libre, ratio):
+    if libre < 0:
+        return f"""
+🚨 Situación crítica
 
-        if p["tipo"] == "deuda":
-            st.write("👉 Refinanciar deuda para reducir cuota")
-            st.write("💰 Ahorro estimado: hasta 20% anual")
-            st.link_button("Ver opciones de deuda", "https://google.com")
+Estás gastando más de lo que ingresas.
 
-        elif p["tipo"] == "luz":
-            st.write("👉 Cambiar tarifa eléctrica")
-            st.write("💰 Ahorro estimado: 100–200€/año")
-            st.link_button("Ver tarifas de luz", "https://google.com")
+💸 Estás en déficit mensual.
 
-        elif p["tipo"] == "internet":
-            st.write("👉 Cambiar proveedor de internet")
-            st.link_button("Ver ofertas internet", "https://google.com")
+👉 Prioridad absoluta:
+- reducir gastos fijos
+- eliminar deuda cara
+"""
+    elif ratio > 0.6:
+        return f"""
+⚠️ Situación ajustada
 
-        elif p["tipo"] == "gas":
-            st.write("👉 Optimizar tarifa de gas")
-            st.link_button("Ver tarifas gas", "https://google.com")
+Estás gastando el {round(ratio*100,1)}% de tus ingresos.
 
-        elif p["tipo"] == "agua":
-            st.write("👉 Revisar consumo de agua")
+📉 Tienes poco margen de seguridad.
 
-        elif p["tipo"] == "estructura":
-            st.write("👉 Reducir gastos estructurales (vivienda o estilo de vida)")
+👉 Problema estructural en tu nivel de gasto.
+"""
+    else:
+        return f"""
+✅ Situación estable
 
-    st.divider()
-    st.success("👉 Empieza por el problema con mayor impacto económico")
+Tienes margen financiero positivo.
+
+💡 Oportunidad de optimización de gastos.
+
+👉 Aquí el objetivo es ahorrar más, no sobrevivir.
+"""
+
+st.subheader("🧠 Resumen global")
+st.info(analisis_global(total, ingresos, libre, ratio))
+
+
+# -----------------------
+# OPTIMIZACIÓN FACTURAS
+# -----------------------
+st.subheader("📡 Optimización de facturas")
+
+ahorro_facturas = 0
+
+if luz > 40:
+    ahorro = int((luz - 25) * 12)
+    ahorro_facturas += ahorro
+    st.write(f"💡 Luz: podrías ahorrar hasta **{ahorro}€/año**")
+    st.link_button("Ver tarifas luz", "https://google.com")
+
+if gas > 35:
+    ahorro = int((gas - 25) * 12)
+    ahorro_facturas += ahorro
+    st.write(f"🔥 Gas: posible ahorro de **{ahorro}€/año**")
+    st.link_button("Ver tarifas gas", "https://google.com")
+
+if internet > 40:
+    ahorro = int((internet - 25) * 12)
+    ahorro_facturas += ahorro
+    st.write(f"🌐 Internet: posible ahorro de **{ahorro}€/año**")
+    st.link_button("Ver ofertas internet", "https://google.com")
+
+if agua > 30:
+    ahorro = int((agua - 20) * 12)
+    ahorro_facturas += ahorro
+    st.write(f"🚰 Agua: posible ahorro de **{ahorro}€/año**")
+
+if ahorro_facturas > 0:
+    st.success(f"💰 Ahorro total estimado en facturas: **{ahorro_facturas}€/año**")
+
+
+# -----------------------
+# SEGUROS (NUEVO MÓDULO)
+# -----------------------
+st.subheader("🛡️ Optimización de seguros")
+
+tipo_seguro = st.selectbox(
+    "Tipo de seguro principal",
+    ["Coche", "Hogar", "Salud", "Varios"]
+)
+
+seguro_coste = st.number_input("Pago mensual seguros (€)", value=80)
+
+if seguro_coste > 0:
+
+    ahorro_seguro = int(seguro_coste * 0.25 * 12)
+
+    st.write("📊 Análisis de seguros")
+
+    if seguro_coste > 60:
+        st.warning("⚠️ Tus seguros parecen por encima de la media del mercado")
+
+        st.write(f"💰 Podrías ahorrar hasta **{ahorro_seguro}€/año**")
+
+        st.link_button("Comparar seguros", "https://google.com")
+
+    else:
+        st.success("✅ Tus seguros están dentro de rango razonable")
