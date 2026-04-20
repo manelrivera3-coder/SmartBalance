@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 st.set_page_config(page_title="SmartBalance AI", layout="centered")
 
 st.title("💰 SmartBalance AI")
-st.write("Analiza tu dinero, detecta problemas y optimiza tus gastos")
+st.write("Detecta fugas de dinero y optimiza tus gastos con IA")
 
 # -----------------------
 # INPUT
@@ -14,8 +14,7 @@ st.header("📊 Datos financieros")
 ingresos = st.number_input("Ingresos mensuales (€)", min_value=0, value=2000)
 
 st.subheader("🏠 Vivienda")
-vivienda_tipo = st.selectbox("Tipo", ["Alquiler", "Hipoteca"])
-vivienda = st.number_input("Pago vivienda", value=800)
+vivienda = st.number_input("Vivienda (alquiler/hipoteca)", value=800)
 
 st.subheader("💸 Gastos")
 deuda = st.number_input("Deuda mensual", value=200)
@@ -24,10 +23,11 @@ gasolina = st.number_input("Gasolina", value=120)
 otros = st.number_input("Otros", value=200)
 
 st.subheader("🧾 Facturas")
-luz = st.number_input("Luz", value=60)
+luz = st.number_input("Electricidad", value=60)
 agua = st.number_input("Agua", value=25)
 gas = st.number_input("Gas", value=30)
 internet = st.number_input("Internet", value=35)
+movil = st.number_input("Móvil", value=20)
 
 st.subheader("🛡️ Seguros")
 seguros = st.number_input("Seguros totales (€)", value=80)
@@ -52,33 +52,113 @@ def motor(ingresos, gastos):
     if ratio_deuda > 0.3:
         problemas.append(("deuda", gastos["deuda"] * 0.2, "Deuda elevada"))
 
-    if gastos["luz"] > 40:
-        problemas.append(("luz", gastos["luz"] * 0.3, "Electricidad cara"))
+    # Facturas
+    if luz > 40:
+        problemas.append(("luz", luz * 0.3, "Electricidad cara"))
 
-    if gastos["internet"] > 40:
-        problemas.append(("internet", gastos["internet"] * 0.4, "Internet caro"))
+    if internet > 40:
+        problemas.append(("internet", internet * 0.4, "Internet caro"))
 
-    if gastos["gas"] > 40:
-        problemas.append(("gas", gastos["gas"] * 0.3, "Gas elevado"))
+    if gas > 40:
+        problemas.append(("gas", gas * 0.3, "Gas elevado"))
 
-    if gastos["agua"] > 30:
-        problemas.append(("agua", gastos["agua"] * 0.2, "Agua alta"))
+    if movil > 25:
+        problemas.append(("movil", movil * 0.4, "Móvil caro"))
 
-    problemas = sorted(problemas, key=lambda x: x[1], reverse=True)
+    if agua > 30:
+        problemas.append(("agua", agua * 0.2, "Agua alta"))
 
-    return total, libre, ratio, ratio_deuda, problemas
+    return total, libre, ratio, ratio_deuda, sorted(problemas, key=lambda x: x[1], reverse=True)
 
 
 # -----------------------
-# EXPLICACIÓN IA
+# IA EXPLICATIVA AVANZADA
 # -----------------------
 def explicar(tipo, ratio, ratio_deuda):
     if tipo == "deuda":
-        return f"Estás usando un {round(ratio_deuda*100,1)}% de ingresos en deuda. Nivel alto de riesgo financiero."
-    if tipo == "estructura":
-        return f"Estás gastando un {round(ratio*100,1)}% de tus ingresos. Muy ajustado."
+        return f"""
+💳 DEUDA
+
+Estás usando un {round(ratio_deuda*100,1)}% de tus ingresos en deuda.
+
+📉 Por encima del 30–35% entras en riesgo financiero.
+
+👉 Esto reduce tu capacidad de ahorro y te hace vulnerable.
+"""
+
     if tipo == "luz":
-        return "Tu gasto en luz es superior a lo habitual. Probable sobrecoste en tarifa."
+        return """
+💡 ELECTRICIDAD
+
+Estás pagando por encima de la media.
+
+🔍 Posibles causas:
+- tarifa antigua
+- potencia mal ajustada
+
+💸 Ahorro potencial: 100–200€/año
+"""
+
+    if tipo == "internet":
+        return """
+🌐 INTERNET
+
+Coste superior al mercado.
+
+🔍 Causas habituales:
+- permanencia antigua
+- falta de revisión de tarifa
+
+💸 Gasto innecesario mensual
+"""
+
+    if tipo == "gas":
+        return """
+🔥 GAS
+
+Consumo por encima de lo esperado.
+
+🔍 Posibles mejoras:
+- revisión de tarifa
+- cambio de comercializadora
+
+💸 Ahorro anual posible significativo
+"""
+
+    if tipo == "movil":
+        return """
+📱 MÓVIL
+
+Estás pagando más de lo necesario.
+
+🔍 Normalmente ocurre por:
+- tarifa antigua
+- exceso de datos no usados
+
+💸 Fácil ahorro mensual sin cambios de hábitos
+"""
+
+    if tipo == "agua":
+        return """
+🚰 AGUA
+
+Consumo ligeramente elevado.
+
+🔍 Posibles causas:
+- hábitos domésticos
+- tarifas no optimizadas
+"""
+
+    if tipo == "estructura":
+        return f"""
+🏠 ESTRUCTURA FINANCIERA
+
+Estás gastando el {round(ratio*100,1)}% de tus ingresos.
+
+📊 Lo recomendado es < 50%.
+
+👉 Necesitas reducir gastos fijos o aumentar ingresos.
+"""
 
 
 # -----------------------
@@ -95,6 +175,7 @@ if calcular and ingresos > 0:
         "agua": agua,
         "gas": gas,
         "internet": internet,
+        "movil": movil,
         "seguros": seguros,
         "otros": otros
     }
@@ -120,7 +201,7 @@ if calcular and ingresos > 0:
     # -----------------------
     st.subheader("📊 Regla 50/30/20")
 
-    necesarios = vivienda + deuda + luz + agua + gas + internet + alimentacion + seguros
+    necesarios = vivienda + deuda + luz + agua + gas + internet + movil + alimentacion + seguros
     ocio = gasolina + otros
     ahorro = ingresos - total
 
@@ -129,76 +210,56 @@ if calcular and ingresos > 0:
     st.write(f"Ahorro: {round(ahorro/ingresos*100)}%")
 
     # -----------------------
-    # ANÁLISIS GLOBAL (FIX ERROR)
+    # ANÁLISIS GLOBAL
     # -----------------------
     def analisis_global():
         if libre < 0:
-            return "🚨 Gastas más de lo que ingresas. Situación crítica."
+            return "🚨 Gastas más de lo que ingresas"
         elif ratio > 0.6:
-            return "⚠️ Gastos demasiado altos. Poco margen financiero."
+            return "⚠️ Situación ajustada"
         else:
-            return "✅ Situación estable con margen de mejora."
+            return "✅ Situación estable"
 
     st.subheader("🧠 Análisis global")
     st.info(analisis_global())
 
     # -----------------------
-    # FACTURAS (OPTIMIZACIÓN)
-    # -----------------------
-    st.subheader("💡 Optimización facturas")
-
-    ahorro_facturas = 0
-
-    if luz > 40:
-        ahorro_facturas += (luz - 25) * 12
-        st.write("💡 Luz: posible ahorro")
-
-    if internet > 40:
-        ahorro_facturas += (internet - 25) * 12
-        st.write("🌐 Internet: posible ahorro")
-
-    if gas > 40:
-        ahorro_facturas += (gas - 25) * 12
-        st.write("🔥 Gas: posible ahorro")
-
-    if ahorro_facturas > 0:
-        st.success(f"Ahorro estimado: {int(ahorro_facturas)}€/año")
-
-    # -----------------------
-    # SEGUROS
-    # -----------------------
-    st.subheader("🛡️ Seguros")
-
-    if seguros > 60:
-        st.warning("Seguros por encima de la media")
-        st.write(f"💰 Posible ahorro: {int(seguros * 0.25 * 12)}€/año")
-        st.link_button("Comparar seguros", "https://google.com")
-    else:
-        st.success("Seguros dentro de rango")
-
-    # -----------------------
     # PROBLEMA PRINCIPAL
     # -----------------------
     if problemas:
+        tipo = problemas[0][0]
+
         st.subheader("🚨 Problema principal")
         st.error(problemas[0][2])
 
-        st.write(explicar(problemas[0][0], ratio, ratio_deuda))
+        st.write(explicar(tipo, ratio, ratio_deuda))
 
     # -----------------------
-    # PLAN ACCIÓN
+    # PLAN DE ACCIÓN + MONETIZACIÓN
     # -----------------------
-    st.header("💡 Plan de acción")
+    st.header("💡 Optimización automática")
 
     for p in problemas:
-        if p[0] == "deuda":
-            st.link_button("Mejorar deuda", "https://google.com")
 
         if p[0] == "luz":
-            st.link_button("Reducir luz", "https://google.com")
+            st.write("💡 Luz: posible ahorro")
+            st.link_button("Comparar luz", "https://google.com")
 
         if p[0] == "internet":
-            st.link_button("Mejorar internet", "https://google.com")
+            st.write("🌐 Internet: posible ahorro")
+            st.link_button("Comparar internet", "https://google.com")
 
         if p[0] == "gas":
-            st.link_button("Reducir gas", "https://google.com")
+            st.write("🔥 Gas: posible ahorro")
+            st.link_button("Comparar gas", "https://google.com")
+
+        if p[0] == "movil":
+            st.write("📱 Móvil: posible ahorro")
+            st.link_button("Comparar móvil", "https://google.com")
+
+        if p[0] == "agua":
+            st.write("🚰 Agua: optimización posible")
+
+        if p[0] == "deuda":
+            st.write("💳 Refinanciar deuda")
+            st.link_button("Mejorar deuda", "https://google.com")
