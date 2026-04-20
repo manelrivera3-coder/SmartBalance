@@ -3,21 +3,21 @@ import plotly.graph_objects as go
 
 st.set_page_config(page_title="SmartBalance AI", layout="centered")
 
-st.title("💰 SmartBalance AI")
-st.write("Detecta fugas de dinero y optimiza tus gastos con IA")
+st.title("💰 SmartBalance AI - Motor Financiero Avanzado")
+st.write("Analiza tu situación, optimiza tu dinero y detecta fugas financieras")
 
 # -----------------------
 # INPUT
 # -----------------------
-st.header("📊 Datos financieros")
+st.header("📊 Ingresos y gastos")
 
-ingresos = st.number_input("Ingresos mensuales (€)", min_value=0, value=2000)
+ingresos = st.number_input("Ingresos mensuales (€)", value=2000)
 
 st.subheader("🏠 Vivienda")
 vivienda = st.number_input("Vivienda (alquiler/hipoteca)", value=800)
 
-st.subheader("💸 Gastos")
-deuda = st.number_input("Deuda mensual", value=200)
+st.subheader("💸 Gastos generales")
+deuda = st.number_input("Deuda", value=200)
 alimentacion = st.number_input("Alimentación", value=300)
 gasolina = st.number_input("Gasolina", value=120)
 otros = st.number_input("Otros", value=200)
@@ -30,236 +30,174 @@ internet = st.number_input("Internet", value=35)
 movil = st.number_input("Móvil", value=20)
 
 st.subheader("🛡️ Seguros")
-seguros = st.number_input("Seguros totales (€)", value=80)
+seguros = st.number_input("Seguros", value=80)
 
-calcular = st.button("Analizar")
+analizar = st.button("Analizar situación")
 
 # -----------------------
-# MOTOR IA
+# MOTOR FINANCIERO
 # -----------------------
-def motor(ingresos, gastos):
-    total = sum(gastos.values())
-    libre = ingresos - total
+def motor_financiero():
 
-    ratio = total / ingresos if ingresos > 0 else 0
-    ratio_deuda = gastos["deuda"] / ingresos if ingresos > 0 else 0
+    # ---------------- ACTUAL ----------------
+    necesidades_actuales = (
+        vivienda + deuda + alimentacion +
+        luz + agua + gas + internet + movil + seguros
+    )
 
-    problemas = []
+    ocio_actual = gasolina + otros
+    ahorro_actual = max(0, ingresos - (necesidades_actuales + ocio_actual))
 
-    if ratio > 0.6:
-        problemas.append(("estructura", (ratio - 0.5) * ingresos, "Gastos demasiado altos"))
+    total_gastos = necesidades_actuales + ocio_actual
 
-    if ratio_deuda > 0.3:
-        problemas.append(("deuda", gastos["deuda"] * 0.2, "Deuda elevada"))
+    ratio = total_gastos / ingresos if ingresos > 0 else 0
+    ratio_deuda = deuda / ingresos if ingresos > 0 else 0
 
-    # Facturas
+    # ---------------- BENCHMARK (IDEAL) ----------------
+    necesidades_ideal = ingresos * 0.5
+    ocio_ideal = ingresos * 0.3
+    ahorro_ideal = ingresos * 0.2
+
+    # ---------------- OPTIMIZACIÓN FACTURAS ----------------
+    ahorro_facturas = 0
+
     if luz > 40:
-        problemas.append(("luz", luz * 0.3, "Electricidad cara"))
+        ahorro_facturas += (luz - 25) * 12
 
     if internet > 40:
-        problemas.append(("internet", internet * 0.4, "Internet caro"))
+        ahorro_facturas += (internet - 25) * 12
 
     if gas > 40:
-        problemas.append(("gas", gas * 0.3, "Gas elevado"))
+        ahorro_facturas += (gas - 25) * 12
 
     if movil > 25:
-        problemas.append(("movil", movil * 0.4, "Móvil caro"))
+        ahorro_facturas += (movil - 15) * 12
 
-    if agua > 30:
-        problemas.append(("agua", agua * 0.2, "Agua alta"))
+    # ---------------- OPTIMIZACIÓN DEUDA ----------------
+    ahorro_deuda = 0
+    if ratio_deuda > 0.3:
+        ahorro_deuda = deuda * 0.2 * 12
 
-    return total, libre, ratio, ratio_deuda, sorted(problemas, key=lambda x: x[1], reverse=True)
+    # ---------------- ESTADO OPTIMIZADO ----------------
+    ahorro_total_posible = ahorro_facturas + ahorro_deuda
+
+    ingresos_optimizados = ingresos + (ahorro_total_posible / 12)
+
+    necesidades_opt = max(0, necesidades_actuales - (ahorro_facturas / 12))
+    ahorro_opt = ingresos * 0.2 + (ahorro_total_posible / 12)
+
+    ocio_opt = ingresos_optimizados - necesidades_opt - ahorro_opt
+
+    # ---------------- GAPS ----------------
+    gap_ahorro = ahorro_ideal - ahorro_actual
+    gap_necesidades = necesidades_actuales - necesidades_ideal
+
+    return {
+        "actual": (necesidades_actuales, ocio_actual, ahorro_actual),
+        "ideal": (necesidades_ideal, ocio_ideal, ahorro_ideal),
+        "opt": (necesidades_opt, ocio_opt, ahorro_opt),
+        "gaps": (gap_ahorro, gap_necesidades),
+        "ahorro_potencial": ahorro_total_posible,
+        "ratio": ratio,
+        "ratio_deuda": ratio_deuda
+    }
 
 
 # -----------------------
-# IA EXPLICATIVA AVANZADA
+# EXPLICACIÓN IA
 # -----------------------
-def explicar(tipo, ratio, ratio_deuda):
-    if tipo == "deuda":
+def explicar_estado(data):
+
+    ratio = data["ratio"]
+    ahorro_gap, necesidades_gap = data["gaps"]
+
+    if ratio > 0.6:
         return f"""
-💳 DEUDA
+🚨 SITUACIÓN FINANCIERA AJUSTADA
 
-Estás usando un {round(ratio_deuda*100,1)}% de tus ingresos en deuda.
+Estás gastando un {round(ratio*100,1)}% de tus ingresos.
 
-📉 Por encima del 30–35% entras en riesgo financiero.
+📉 Esto reduce tu capacidad de ahorro y te deja sin margen.
 
-👉 Esto reduce tu capacidad de ahorro y te hace vulnerable.
+💸 Estás perdiendo aproximadamente {int(ahorro_gap)}€ de capacidad de ahorro mensual.
+
+👉 Problema principal: estructura de gasto.
 """
 
-    if tipo == "luz":
-        return """
-💡 ELECTRICIDAD
+    return f"""
+✅ SITUACIÓN FINANCIERA ESTABLE
 
-Estás pagando por encima de la media.
+Tienes margen de maniobra financiero.
 
-🔍 Posibles causas:
-- tarifa antigua
-- potencia mal ajustada
+💡 Aun así, podrías optimizar hasta {int(data['ahorro_potencial']/12)}€ mensuales.
 
-💸 Ahorro potencial: 100–200€/año
-"""
-
-    if tipo == "internet":
-        return """
-🌐 INTERNET
-
-Coste superior al mercado.
-
-🔍 Causas habituales:
-- permanencia antigua
-- falta de revisión de tarifa
-
-💸 Gasto innecesario mensual
-"""
-
-    if tipo == "gas":
-        return """
-🔥 GAS
-
-Consumo por encima de lo esperado.
-
-🔍 Posibles mejoras:
-- revisión de tarifa
-- cambio de comercializadora
-
-💸 Ahorro anual posible significativo
-"""
-
-    if tipo == "movil":
-        return """
-📱 MÓVIL
-
-Estás pagando más de lo necesario.
-
-🔍 Normalmente ocurre por:
-- tarifa antigua
-- exceso de datos no usados
-
-💸 Fácil ahorro mensual sin cambios de hábitos
-"""
-
-    if tipo == "agua":
-        return """
-🚰 AGUA
-
-Consumo ligeramente elevado.
-
-🔍 Posibles causas:
-- hábitos domésticos
-- tarifas no optimizadas
-"""
-
-    if tipo == "estructura":
-        return f"""
-🏠 ESTRUCTURA FINANCIERA
-
-Estás gastando el {round(ratio*100,1)}% de tus ingresos.
-
-📊 Lo recomendado es < 50%.
-
-👉 Necesitas reducir gastos fijos o aumentar ingresos.
+👉 Oportunidad: reducir fugas en facturas y deuda.
 """
 
 
 # -----------------------
 # RESULTADO
 # -----------------------
-if calcular and ingresos > 0:
+if analizar:
 
-    gastos = {
-        "vivienda": vivienda,
-        "deuda": deuda,
-        "alimentacion": alimentacion,
-        "gasolina": gasolina,
-        "luz": luz,
-        "agua": agua,
-        "gas": gas,
-        "internet": internet,
-        "movil": movil,
-        "seguros": seguros,
-        "otros": otros
-    }
+    data = motor_financiero()
 
-    total, libre, ratio, ratio_deuda, problemas = motor(ingresos, gastos)
+    actual = data["actual"]
+    ideal = data["ideal"]
+    opt = data["opt"]
 
-    st.header("📊 Resultado")
+    st.header("📊 Estado financiero")
 
-    st.write(f"💸 Gastos: {total}€")
-    st.write(f"💰 Libre: {libre}€")
-    st.write(f"📉 Ratio: {round(ratio*100,1)}%")
+    st.subheader("🔴 Estado actual")
+    st.write(f"Necesidades: {int(actual[0])}€")
+    st.write(f"Ocio: {int(actual[1])}€")
+    st.write(f"Ahorro: {int(actual[2])}€")
+
+    st.subheader("🟡 Estado ideal (benchmark)")
+    st.write(f"Necesidades: {int(ideal[0])}€")
+    st.write(f"Ocio: {int(ideal[1])}€")
+    st.write(f"Ahorro: {int(ideal[2])}€")
+
+    st.subheader("🟢 Estado optimizado (IA)")
+    st.write(f"Necesidades: {int(opt[0])}€")
+    st.write(f"Ocio: {int(opt[1])}€")
+    st.write(f"Ahorro: {int(opt[2])}€")
 
     # -----------------------
     # GRÁFICO
     # -----------------------
-    st.subheader("📊 Distribución")
+    fig = go.Figure()
 
-    fig = go.Figure(data=[go.Pie(labels=list(gastos.keys()), values=list(gastos.values()), hole=.4)])
+    fig.add_trace(go.Bar(name="Actual", x=["Necesidades","Ocio","Ahorro"], y=actual))
+    fig.add_trace(go.Bar(name="Ideal", x=["Necesidades","Ocio","Ahorro"], y=ideal))
+    fig.add_trace(go.Bar(name="Optimizado", x=["Necesidades","Ocio","Ahorro"], y=opt))
+
     st.plotly_chart(fig)
 
     # -----------------------
-    # 50/30/20
+    # IA EXPLICATIVA
     # -----------------------
-    st.subheader("📊 Regla 50/30/20")
-
-    necesarios = vivienda + deuda + luz + agua + gas + internet + movil + alimentacion + seguros
-    ocio = gasolina + otros
-    ahorro = ingresos - total
-
-    st.write(f"Necesidades: {round(necesarios/ingresos*100)}%")
-    st.write(f"Ocio: {round(ocio/ingresos*100)}%")
-    st.write(f"Ahorro: {round(ahorro/ingresos*100)}%")
+    st.subheader("🧠 Diagnóstico IA")
+    st.info(explicar_estado(data))
 
     # -----------------------
-    # ANÁLISIS GLOBAL
+    # ACCIONES
     # -----------------------
-    def analisis_global():
-        if libre < 0:
-            return "🚨 Gastas más de lo que ingresas"
-        elif ratio > 0.6:
-            return "⚠️ Situación ajustada"
-        else:
-            return "✅ Situación estable"
+    st.header("💡 Acciones recomendadas")
 
-    st.subheader("🧠 Análisis global")
-    st.info(analisis_global())
+    st.write(f"💰 Ahorro potencial total: {int(data['ahorro_potencial'])}€ / año")
 
-    # -----------------------
-    # PROBLEMA PRINCIPAL
-    # -----------------------
-    if problemas:
-        tipo = problemas[0][0]
+    if luz > 40:
+        st.link_button("🔌 Optimizar luz", "https://google.com")
 
-        st.subheader("🚨 Problema principal")
-        st.error(problemas[0][2])
+    if internet > 40:
+        st.link_button("🌐 Optimizar internet", "https://google.com")
 
-        st.write(explicar(tipo, ratio, ratio_deuda))
+    if gas > 40:
+        st.link_button("🔥 Optimizar gas", "https://google.com")
 
-    # -----------------------
-    # PLAN DE ACCIÓN + MONETIZACIÓN
-    # -----------------------
-    st.header("💡 Optimización automática")
+    if movil > 25:
+        st.link_button("📱 Optimizar móvil", "https://google.com")
 
-    for p in problemas:
-
-        if p[0] == "luz":
-            st.write("💡 Luz: posible ahorro")
-            st.link_button("Comparar luz", "https://google.com")
-
-        if p[0] == "internet":
-            st.write("🌐 Internet: posible ahorro")
-            st.link_button("Comparar internet", "https://google.com")
-
-        if p[0] == "gas":
-            st.write("🔥 Gas: posible ahorro")
-            st.link_button("Comparar gas", "https://google.com")
-
-        if p[0] == "movil":
-            st.write("📱 Móvil: posible ahorro")
-            st.link_button("Comparar móvil", "https://google.com")
-
-        if p[0] == "agua":
-            st.write("🚰 Agua: optimización posible")
-
-        if p[0] == "deuda":
-            st.write("💳 Refinanciar deuda")
-            st.link_button("Mejorar deuda", "https://google.com")
+    if data["ratio_deuda"] > 0.3:
+        st.link_button("💳 Reducir deuda", "https://google.com")
